@@ -73,6 +73,7 @@ pub fn parse_mapped_volumes(volume_matches: Vec<&str>) -> HashMap<String, String
     mapped_volumes
 }
 
+#[allow(unused_variables)]
 pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, std::io::Error> {
     #[cfg(target_os = "macos")]
     let storage_root = format!("{}/root", cfg.storage_volume);
@@ -120,6 +121,7 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
     Ok(rootfs.to_string())
 }
 
+#[allow(unused_variables)]
 pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std::io::Error> {
     #[cfg(target_os = "macos")]
     let storage_root = format!("{}/root", cfg.storage_volume);
@@ -166,6 +168,7 @@ pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
     Ok(())
 }
 
+#[allow(unused_variables)]
 pub fn remove_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std::io::Error> {
     #[cfg(target_os = "macos")]
     let storage_root = format!("{}/root", cfg.storage_volume);

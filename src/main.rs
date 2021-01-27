@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashMap;
+#[cfg(target_os = "macos")]
 use std::fs::File;
+#[cfg(target_os = "macos")]
 use std::io::{self, Read, Write};
 
 use clap::{crate_version, App, Arg, ArgMatches};
 use serde_derive::{Deserialize, Serialize};
+#[cfg(target_os = "macos")]
 use text_io::read;
 
 #[allow(unused)]
@@ -56,6 +59,7 @@ impl Default for KrunvmConfig {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn check_case_sensitivity(volume: &str) -> Result<bool, io::Error> {
     let first_path = format!("{}/krunvm_test", volume);
     let second_path = format!("{}/krunVM_test", volume);
@@ -83,6 +87,7 @@ fn check_case_sensitivity(volume: &str) -> Result<bool, io::Error> {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn check_volume(cfg: &mut KrunvmConfig) {
     if !cfg.storage_volume.is_empty() {
         return;
@@ -132,6 +137,16 @@ volume.
                 println!("There was an error running the test: {}", err);
             }
         }
+    }
+}
+
+fn check_unshare() {
+    if std::env::vars()
+        .find(|(key, _)| key == "BUILDAH_ISOLATION")
+        .is_none()
+    {
+        println!("Please re-run krunvm inside a \"buildah unshare\" session");
+        std::process::exit(-1);
     }
 }
 
@@ -331,6 +346,8 @@ fn main() {
 
     #[cfg(target_os = "macos")]
     check_volume(&mut cfg);
+    #[cfg(target_os = "linux")]
+    check_unshare();
 
     if let Some(ref matches) = matches.subcommand_matches("changevm") {
         changevm::changevm(&mut cfg, matches);
