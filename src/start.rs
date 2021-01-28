@@ -3,31 +3,45 @@
 
 use std::ffi::CString;
 use std::fs::File;
+use std::io::{Error, ErrorKind};
 use std::os::unix::io::AsRawFd;
+#[cfg(target_os = "macos")]
 use std::path::Path;
 
 use super::bindings;
 use super::utils::{mount_container, umount_container};
 use crate::{ArgMatches, KrunvmConfig, VmConfig};
 
-unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>) {
-    //bindings::krun_set_log_level(9);
+#[cfg(target_os = "linux")]
+fn map_volumes(_ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
+    for (host_path, guest_path) in vmcfg.mapped_volumes.iter() {
+        let host_dir = CString::new(host_path.to_string()).unwrap();
+        let guest_dir = CString::new(format!("{}{}", rootfs, guest_path)).unwrap();
 
-    let ctx = bindings::krun_create_ctx() as u32;
-
-    let ret = bindings::krun_set_vm_config(ctx, vmcfg.cpus as u8, vmcfg.mem);
-    if ret < 0 {
-        println!("Error setting VM config");
-        std::process::exit(-1);
+        let ret = unsafe { libc::mkdir(guest_dir.as_ptr(), 0o755) };
+        if ret < 0 && Error::last_os_error().kind() != ErrorKind::AlreadyExists {
+            println!("Error creating directory {:?}", guest_dir);
+            std::process::exit(-1);
+        }
+        unsafe { libc::umount(guest_dir.as_ptr()) };
+        let ret = unsafe {
+            libc::mount(
+                host_dir.as_ptr(),
+                guest_dir.as_ptr(),
+                std::ptr::null(),
+                libc::MS_BIND | libc::MS_REC,
+                std::ptr::null(),
+            )
+        };
+        if ret < 0 {
+            println!("Error mounting volume {}", guest_path);
+            std::process::exit(-1);
+        }
     }
+}
 
-    let c_rootfs = CString::new(rootfs).unwrap();
-    let ret = bindings::krun_set_root(ctx, c_rootfs.as_ptr());
-    if ret < 0 {
-        println!("Error setting VM rootfs");
-        std::process::exit(-1);
-    }
-
+#[cfg(target_os = "macos")]
+fn map_volumes(ctx: u32, vmcfg: &VmConfig, _rootfs: &str) {
     let mut volumes = Vec::new();
     for (host_path, guest_path) in vmcfg.mapped_volumes.iter() {
         let full_guest = format!("{}{}", &rootfs, guest_path);
@@ -49,6 +63,27 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
         println!("Error setting VM mapped volumes");
         std::process::exit(-1);
     }
+}
+
+unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>) {
+    //bindings::krun_set_log_level(9);
+
+    let ctx = bindings::krun_create_ctx() as u32;
+
+    let ret = bindings::krun_set_vm_config(ctx, vmcfg.cpus as u8, vmcfg.mem);
+    if ret < 0 {
+        println!("Error setting VM config");
+        std::process::exit(-1);
+    }
+
+    let c_rootfs = CString::new(rootfs).unwrap();
+    let ret = bindings::krun_set_root(ctx, c_rootfs.as_ptr());
+    if ret < 0 {
+        println!("Error setting VM rootfs");
+        std::process::exit(-1);
+    }
+
+    map_volumes(ctx, &vmcfg, rootfs);
 
     let mut ports = Vec::new();
     for (host_port, guest_port) in vmcfg.mapped_ports.iter() {
