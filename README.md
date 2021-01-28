@@ -15,6 +15,12 @@
 
 [![asciicast](https://asciinema.org/a/CGtTS93VsdzWwUfkY1kqVnaik.svg)](https://asciinema.org/a/CGtTS93VsdzWwUfkY1kqVnaik)
 
+## Supported platforms
+
+- Linux/KVM on x86_64.
+- Linux/KVM on AArch64.
+- macOS/Hypervisor.framework on ARM64.
+
 ## Installation
 
 ### macOS
@@ -27,10 +33,10 @@ brew install krunvm
 ### Fedora
 
 ```
-dnf copr enable slp/libkrunfw
-dnf copr enable slp/libkrun
-dnf copr enable slp/krunvm
-dnf install krunvm
+dnf copr enable -y slp/libkrunfw
+dnf copr enable -y slp/libkrun
+dnf copr enable -y slp/krunvm
+dnf install -y krunvm
 ```
 
 ### Building from sources
