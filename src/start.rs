@@ -77,7 +77,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
     }
 
     let c_rootfs = CString::new(rootfs).unwrap();
-    let ret = bindings::krun_set_root(ctx, c_rootfs.as_ptr());
+    let ret = bindings::krun_set_root(ctx, c_rootfs.as_ptr() as *const i8);
     if ret < 0 {
         println!("Error setting VM rootfs");
         std::process::exit(-1);
@@ -92,7 +92,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
     }
     let mut ps: Vec<*const i8> = Vec::new();
     for port in ports.iter() {
-        ps.push(port.as_ptr());
+        ps.push(port.as_ptr() as *const i8);
     }
     ps.push(std::ptr::null());
     let ret = bindings::krun_set_port_map(ctx, ps.as_ptr());
@@ -102,7 +102,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
     }
 
     let c_workdir = CString::new(vmcfg.workdir.clone()).unwrap();
-    let ret = bindings::krun_set_workdir(ctx, c_workdir.as_ptr());
+    let ret = bindings::krun_set_workdir(ctx, c_workdir.as_ptr() as *const i8);
     if ret < 0 {
         println!("Error setting VM workdir");
         std::process::exit(-1);
@@ -110,7 +110,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
 
     let mut argv: Vec<*const i8> = Vec::new();
     for a in args.iter() {
-        argv.push(a.as_ptr());
+        argv.push(a.as_ptr() as *const i8);
     }
     argv.push(std::ptr::null());
 
@@ -118,14 +118,19 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
     let home = CString::new("HOME=/root").unwrap();
     let path = CString::new("PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin").unwrap();
     let env: [*const i8; 4] = [
-        hostname.as_ptr(),
-        home.as_ptr(),
-        path.as_ptr(),
+        hostname.as_ptr() as *const i8,
+        home.as_ptr() as *const i8,
+        path.as_ptr() as *const i8,
         std::ptr::null(),
     ];
 
     let c_cmd = CString::new(cmd).unwrap();
-    let ret = bindings::krun_set_exec(ctx, c_cmd.as_ptr(), argv.as_ptr(), env.as_ptr());
+    let ret = bindings::krun_set_exec(
+        ctx,
+        c_cmd.as_ptr() as *const i8,
+        argv.as_ptr() as *const *const i8,
+        env.as_ptr() as *const *const i8,
+    );
     if ret < 0 {
         println!("Error setting VM config");
         std::process::exit(-1);
