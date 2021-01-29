@@ -41,7 +41,7 @@ fn map_volumes(_ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
 }
 
 #[cfg(target_os = "macos")]
-fn map_volumes(ctx: u32, vmcfg: &VmConfig, _rootfs: &str) {
+fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
     let mut volumes = Vec::new();
     for (host_path, guest_path) in vmcfg.mapped_volumes.iter() {
         let full_guest = format!("{}{}", &rootfs, guest_path);
@@ -58,7 +58,7 @@ fn map_volumes(ctx: u32, vmcfg: &VmConfig, _rootfs: &str) {
         vols.push(vol.as_ptr());
     }
     vols.push(std::ptr::null());
-    let ret = bindings::krun_set_mapped_volumes(ctx, vols.as_ptr());
+    let ret = unsafe { bindings::krun_set_mapped_volumes(ctx, vols.as_ptr()) };
     if ret < 0 {
         println!("Error setting VM mapped volumes");
         std::process::exit(-1);
