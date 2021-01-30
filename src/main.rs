@@ -140,16 +140,16 @@ volume.
     }
 }
 
+#[cfg(target_os = "linux")]
 fn check_unshare() {
     let uid = unsafe { libc::getuid() };
-    if uid != 0 {
-        if std::env::vars()
+    if uid != 0
+        && std::env::vars()
             .find(|(key, _)| key == "BUILDAH_ISOLATION")
             .is_none()
-        {
-            println!("Please re-run krunvm inside a \"buildah unshare\" session");
-            std::process::exit(-1);
-        }
+    {
+        println!("Please re-run krunvm inside a \"buildah unshare\" session");
+        std::process::exit(-1);
     }
 }
 

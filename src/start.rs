@@ -3,6 +3,7 @@
 
 use std::ffi::CString;
 use std::fs::File;
+#[cfg(target_os = "linux")]
 use std::io::{Error, ErrorKind};
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "macos")]
