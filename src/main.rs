@@ -96,8 +96,8 @@ fn check_volume(cfg: &mut KrunvmConfig) {
     println!(
         "
 On macOS, krunvm requires a dedicated, case-sensitive volume.
-You can easily such volume by executing something like this on
-another terminal:
+You can easily create such volume by executing something like
+this on another terminal:
 
 diskutil apfs addVolume disk3 \"Case-sensitive APFS\" krunvm
 
