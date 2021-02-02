@@ -169,11 +169,17 @@ fn main() {
         .subcommand(
             App::new("changevm")
                 .about("Change the configuration of a lightweight VM")
-                .arg(Arg::with_name("cpus").long("cpus").help("Number of vCPUs"))
+                .arg(
+                    Arg::with_name("cpus")
+                        .long("cpus")
+                        .help("Number of vCPUs")
+                        .takes_value(true),
+                )
                 .arg(
                     Arg::with_name("mem")
                         .long("mem")
-                        .help("Amount of RAM in MiB"),
+                        .help("Amount of RAM in MiB")
+                        .takes_value(true),
                 )
                 .arg(
                     Arg::with_name("workdir")
