@@ -1,7 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fs::File;
+use std::fs;
 use std::io::Write;
 use std::process::Command;
 
@@ -9,8 +9,10 @@ use super::utils::{mount_container, parse_mapped_ports, parse_mapped_volumes, um
 use crate::{ArgMatches, KrunvmConfig, VmConfig, APP_NAME};
 
 fn fix_resolv_conf(rootfs: &str, dns: &str) -> Result<(), std::io::Error> {
+    let resolvconf_dir = format!("{}/etc/", rootfs);
+    fs::create_dir_all(resolvconf_dir)?;
     let resolvconf = format!("{}/etc/resolv.conf", rootfs);
-    let mut file = File::create(resolvconf)?;
+    let mut file = fs::File::create(resolvconf)?;
     file.write_all(b"options use-vc\nnameserver ")?;
     file.write_all(dns.as_bytes())?;
     file.write_all(b"\n")?;
