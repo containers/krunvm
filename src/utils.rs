@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 
-use crate::{KrunvmConfig, VmConfig, APP_NAME};
+use crate::{KrunvmConfig, VmConfig, LIBRARY_NAME};
 
 pub fn parse_mapped_ports(port_matches: Vec<&str>) -> HashMap<String, String> {
     let mut mapped_ports = HashMap::new();
@@ -100,7 +100,7 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
         Ok(output) => output,
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
-                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
+                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", LIBRARY_NAME);
             } else {
                 println!("Error executing buildah: {}", err.to_string());
             }
@@ -148,7 +148,7 @@ pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
         Ok(output) => output,
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
-                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
+                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", LIBRARY_NAME);
             } else {
                 println!("Error executing buildah: {}", err.to_string());
             }
@@ -189,7 +189,7 @@ pub fn remove_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
         Ok(output) => output,
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
-                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
+                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", LIBRARY_NAME);
             } else {
                 println!("Error executing buildah: {}", err.to_string());
             }

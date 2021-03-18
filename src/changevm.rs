@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use crate::{ArgMatches, KrunvmConfig, APP_NAME};
+use crate::{ArgMatches, KrunvmConfig, LIBRARY_NAME};
 
 use super::list::printvm;
 use super::utils::{parse_mapped_ports, parse_mapped_volumes};
@@ -114,6 +114,6 @@ pub fn changevm(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     println!();
 
     if cfg_changed {
-        confy::store(APP_NAME, &cfg).unwrap();
+        confy::store(LIBRARY_NAME, &cfg).unwrap();
     }
 }

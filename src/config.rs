@@ -1,7 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ArgMatches, KrunvmConfig, APP_NAME};
+use crate::{ArgMatches, KrunvmConfig, LIBRARY_NAME};
 
 pub fn config(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     let mut cfg_changed = false;
@@ -40,7 +40,7 @@ pub fn config(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     }
 
     if cfg_changed {
-        confy::store(APP_NAME, &cfg).unwrap();
+        confy::store(LIBRARY_NAME, &cfg).unwrap();
     }
 
     println!("Global configuration:");

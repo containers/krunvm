@@ -1,7 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ArgMatches, KrunvmConfig, APP_NAME};
+use crate::{ArgMatches, KrunvmConfig, LIBRARY_NAME};
 
 use super::utils::{remove_container, umount_container};
 
@@ -19,5 +19,5 @@ pub fn delete(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     umount_container(&cfg, &vmcfg).unwrap();
     remove_container(&cfg, &vmcfg).unwrap();
 
-    confy::store(APP_NAME, &cfg).unwrap();
+    confy::store(LIBRARY_NAME, &cfg).unwrap();
 }

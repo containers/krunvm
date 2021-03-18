@@ -6,7 +6,7 @@ use std::io::Write;
 use std::process::Command;
 
 use super::utils::{mount_container, parse_mapped_ports, parse_mapped_volumes, umount_container};
-use crate::{ArgMatches, KrunvmConfig, VmConfig, APP_NAME};
+use crate::{ArgMatches, KrunvmConfig, VmConfig, LIBRARY_NAME};
 
 fn fix_resolv_conf(rootfs: &str, dns: &str) -> Result<(), std::io::Error> {
     let resolvconf_dir = format!("{}/etc/", rootfs);
@@ -98,7 +98,7 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
         Ok(output) => output,
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
-                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
+                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", LIBRARY_NAME);
             } else {
                 println!("Error executing buildah: {}", err.to_string());
             }
@@ -137,7 +137,7 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     umount_container(&cfg, &vmcfg).unwrap();
 
     cfg.vmconfig_map.insert(name.clone(), vmcfg);
-    confy::store(APP_NAME, cfg).unwrap();
+    confy::store(LIBRARY_NAME, cfg).unwrap();
 
     println!("Lightweight VM created with name: {}", name);
 }
