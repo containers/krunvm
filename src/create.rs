@@ -5,7 +5,10 @@ use std::fs;
 use std::io::Write;
 use std::process::Command;
 
-use super::utils::{mount_container, parse_mapped_ports, parse_mapped_volumes, umount_container};
+use super::utils::{
+    get_buildah_args, mount_container, parse_mapped_ports, parse_mapped_volumes, umount_container,
+    BuildahCommand,
+};
 use crate::{ArgMatches, KrunvmConfig, VmConfig, APP_NAME};
 
 fn fix_resolv_conf(rootfs: &str, dns: &str) -> Result<(), std::io::Error> {
@@ -71,24 +74,8 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
         }
     }
 
-    #[cfg(target_os = "linux")]
-    let mut args = vec!["from"];
-    #[cfg(target_os = "macos")]
-    let storage_root = format!("{}/root", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let storage_runroot = format!("{}/runroot", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let mut args = vec![
-        "--root",
-        &storage_root,
-        "--runroot",
-        &storage_runroot,
-        "from",
-        "--os",
-        "linux",
-    ];
-
-    args.push(image);
+    let mut args = get_buildah_args(&cfg, BuildahCommand::From);
+    args.push(image.to_string());
 
     let output = match Command::new("buildah")
         .args(&args)

@@ -7,6 +7,65 @@ use std::process::Command;
 
 use crate::{KrunvmConfig, VmConfig, APP_NAME};
 
+pub enum BuildahCommand {
+    From,
+    Mount,
+    Unmount,
+    Remove,
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_buildah_args(_cfg: &KrunvmConfig, cmd: BuildahCommand) -> Vec<String> {
+    match cmd {
+        BuildahCommand::From => vec!["from".to_string()],
+        BuildahCommand::Mount => vec!["mount".to_string()],
+        BuildahCommand::Unmount => vec!["umount".to_string()],
+        BuildahCommand::Remove => vec!["rm".to_string()],
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_buildah_args(cfg: &KrunvmConfig, cmd: BuildahCommand) -> Vec<String> {
+    let mut hbpath = std::env::current_exe().unwrap();
+    hbpath.pop();
+    hbpath.pop();
+    let hbpath = hbpath.as_path().display();
+    let policy_json = format!("{}/etc/containers/policy.json", hbpath);
+    let registries_json = format!("{}/etc/containers/registries.conf", hbpath);
+    let storage_root = format!("{}/root", cfg.storage_volume);
+    let storage_runroot = format!("{}/runroot", cfg.storage_volume);
+
+    let mut args = vec![
+        "--root".to_string(),
+        storage_root,
+        "--runroot".to_string(),
+        storage_runroot,
+    ];
+
+    match cmd {
+        BuildahCommand::From => {
+            args.push("--signature-policy".to_string());
+            args.push(policy_json);
+            args.push("--registries-conf".to_string());
+            args.push(registries_json);
+
+            args.push("from".to_string());
+            args.push("--os".to_string());
+            args.push("linux".to_string());
+        }
+        BuildahCommand::Mount => {
+            args.push("mount".to_string());
+        }
+        BuildahCommand::Unmount => {
+            args.push("umount".to_string());
+        }
+        BuildahCommand::Remove => {
+            args.push("rm".to_string());
+        }
+    }
+    args
+}
+
 pub fn parse_mapped_ports(port_matches: Vec<&str>) -> HashMap<String, String> {
     let mut mapped_ports = HashMap::new();
     for port in port_matches.iter() {
@@ -75,22 +134,8 @@ pub fn parse_mapped_volumes(volume_matches: Vec<&str>) -> HashMap<String, String
 
 #[allow(unused_variables)]
 pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, std::io::Error> {
-    #[cfg(target_os = "macos")]
-    let storage_root = format!("{}/root", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let storage_runroot = format!("{}/runroot", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let mut args = vec![
-        "--root",
-        &storage_root,
-        "--runroot",
-        &storage_runroot,
-        "mount",
-    ];
-    #[cfg(target_os = "linux")]
-    let mut args = vec!["mount"];
-
-    args.push(&vmcfg.container);
+    let mut args = get_buildah_args(cfg, BuildahCommand::Mount);
+    args.push(vmcfg.container.clone());
 
     let output = match Command::new("buildah")
         .args(&args)
@@ -123,22 +168,8 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
 
 #[allow(unused_variables)]
 pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std::io::Error> {
-    #[cfg(target_os = "macos")]
-    let storage_root = format!("{}/root", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let storage_runroot = format!("{}/runroot", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let mut args = vec![
-        "--root",
-        &storage_root,
-        "--runroot",
-        &storage_runroot,
-        "umount",
-    ];
-    #[cfg(target_os = "linux")]
-    let mut args = vec!["umount"];
-
-    args.push(&vmcfg.container);
+    let mut args = get_buildah_args(cfg, BuildahCommand::Unmount);
+    args.push(vmcfg.container.clone());
 
     let output = match Command::new("buildah")
         .args(&args)
@@ -170,16 +201,8 @@ pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
 
 #[allow(unused_variables)]
 pub fn remove_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std::io::Error> {
-    #[cfg(target_os = "macos")]
-    let storage_root = format!("{}/root", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let storage_runroot = format!("{}/runroot", cfg.storage_volume);
-    #[cfg(target_os = "macos")]
-    let mut args = vec!["--root", &storage_root, "--runroot", &storage_runroot, "rm"];
-    #[cfg(target_os = "linux")]
-    let mut args = vec!["rm"];
-
-    args.push(&vmcfg.container);
+    let mut args = get_buildah_args(cfg, BuildahCommand::Remove);
+    args.push(vmcfg.container.clone());
 
     let output = match Command::new("buildah")
         .args(&args)
