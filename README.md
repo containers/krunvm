@@ -52,21 +52,3 @@ dnf install -y krunvm
 ```
 cargo build --release
 ```
-
-## Limitations
-
-### Networking
-
-#### Networking support is limited to TCP IPv4
-
-The current implementation of TSI (Transparent Socket Impersonation)
-in libkrun is limited to TCP and IPv4. This is expected to improve
-soon.
-
-#### Domain name resolution is broken on musl-based distributions
-
-As a consequence of the previous point, libkrun-based VMs need to use
-TCP for connecting to the DNS servers. **musl libc** does not support
-domain name resolution using TCP, so on distributions based on this
-library (such as Alpine), name resolution is broken.
-
