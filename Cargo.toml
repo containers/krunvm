@@ -1,6 +1,6 @@
 [package]
 name = "krunvm"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Sergio Lopez <slp@redhat.com>"]
 description = "Create microVMs from OCI images"
 repository = "https://github.com/containers/krunvm"
