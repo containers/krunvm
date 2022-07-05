@@ -159,7 +159,7 @@ fn main() {
     let mut app = App::new("krunvm")
         .version(crate_version!())
         .author("Sergio Lopez <slp@redhat.com>")
-        .about("Manage lightweight VMs created from OCI images")
+        .about("Manage microVMs created from OCI images")
         .arg(
             Arg::with_name("v")
                 .short("v")
@@ -168,7 +168,7 @@ fn main() {
         )
         .subcommand(
             App::new("changevm")
-                .about("Change the configuration of a lightweight VM")
+                .about("Change the configuration of a microVM")
                 .arg(
                     Arg::with_name("cpus")
                         .long("cpus")
@@ -185,7 +185,7 @@ fn main() {
                     Arg::with_name("workdir")
                         .long("workdir")
                         .short("w")
-                        .help("Working directory inside the lightweight VM")
+                        .help("Working directory inside the microVM")
                         .takes_value(true),
                 )
                 .arg(
@@ -244,13 +244,13 @@ fn main() {
                 .arg(
                     Arg::with_name("dns")
                         .long("dns")
-                        .help("DNS server to use in the lightweight VM")
+                        .help("DNS server to use in the microVM")
                         .takes_value(true),
                 ),
         )
         .subcommand(
             App::new("create")
-                .about("Create a new lightweight VM")
+                .about("Create a new microVM")
                 .arg(
                     Arg::with_name("cpus")
                         .long("cpus")
@@ -266,14 +266,14 @@ fn main() {
                 .arg(
                     Arg::with_name("dns")
                         .long("dns")
-                        .help("DNS server to use in the lightweight VM")
+                        .help("DNS server to use in the microVM")
                         .takes_value(true),
                 )
                 .arg(
                     Arg::with_name("workdir")
                         .long("workdir")
                         .short("w")
-                        .help("Working directory inside the lightweight VM")
+                        .help("Working directory inside the microVM")
                         .takes_value(true)
                         .default_value("/root"),
                 )
@@ -306,17 +306,15 @@ fn main() {
                 ),
         )
         .subcommand(
-            App::new("delete")
-                .about("Delete an existing lightweight VM")
-                .arg(
-                    Arg::with_name("NAME")
-                        .help("Name of the lightweight VM to be deleted")
-                        .required(true)
-                        .index(1),
-                ),
+            App::new("delete").about("Delete an existing microVM").arg(
+                Arg::with_name("NAME")
+                    .help("Name of the microVM to be deleted")
+                    .required(true)
+                    .index(1),
+            ),
         )
         .subcommand(
-            App::new("list").about("List lightweight VMs").arg(
+            App::new("list").about("List microVMs").arg(
                 Arg::with_name("debug")
                     .short("d")
                     .help("print debug information verbosely"),
@@ -324,7 +322,7 @@ fn main() {
         )
         .subcommand(
             App::new("start")
-                .about("Start an existing lightweight VM")
+                .about("Start an existing microVM")
                 .arg(Arg::with_name("cpus").long("cpus").help("Number of vCPUs"))
                 .arg(
                     Arg::with_name("mem")
@@ -333,7 +331,7 @@ fn main() {
                 )
                 .arg(
                     Arg::with_name("NAME")
-                        .help("Name of the lightweight VM")
+                        .help("Name of the microVM")
                         .required(true)
                         .index(1),
                 )

@@ -126,5 +126,5 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     cfg.vmconfig_map.insert(name.clone(), vmcfg);
     confy::store(APP_NAME, cfg).unwrap();
 
-    println!("Lightweight VM created with name: {}", name);
+    println!("microVM created with name: {}", name);
 }

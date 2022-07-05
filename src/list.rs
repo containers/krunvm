@@ -16,7 +16,7 @@ pub fn printvm(vm: &VmConfig) {
 
 pub fn list(cfg: &KrunvmConfig, _matches: &ArgMatches) {
     if cfg.vmconfig_map.is_empty() {
-        println!("No lightweight VMs found");
+        println!("No microVMs found");
     } else {
         for (_name, vm) in cfg.vmconfig_map.iter() {
             println!();
