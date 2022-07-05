@@ -1,0 +1,64 @@
+krunvm-changevm(1)
+==================
+
+NAME
+----
+krunvm-changevm - Change the configuration of a microVM
+
+
+SYNOPSIS
+--------
+*krunvm changevm* [_OPTIONS_] _microVM_
+
+
+DESCRIPTION
+-----------
+*krunvm changevm* changes the configuration of an existing microVM.
+
+When run without any _OPTIONS_, it displays the current configuration
+of the microVM.
+
+
+OPTIONS
+-------
+*--remove-ports*::
+  Removes all port mappings.
+
+*--remote-volumes*::
+  Removes all volume mappings.
+
+*--cpus* _NUM_::
+  Changes the number of vCPUs that will be created for this microVM.
+
+*--mem* _NUM_::
+  Changes the amount of RAM, in MiB, that will be available to this
+  microVM.
++
+The memory configured for the microVM will not be reserved
+immediately. Instead, it will be provided as the guest demands it, and
+both the guest and libkrun (acting as the Virtual Machine Monitor)
+will attempt to return as many pages as possible to the host.
+
+*--name* _NAME_::
+  Assigns a new name to the microVM.
+
+*-p, --port* _HOST_PORT:GUEST_PORT_::
+  Exposes a port in the guest running in the microVM through a port in the host.
++
+This option can be specified multiple times to expose as many guest
+ports as desired.
+
+*-v, --volume* _HOST_PATH:GUEST_PATH_::
+  Makes _HOST_PATH_ visible in the guest running in the microVM through _GUEST_PATH_.
++
+This option can be specified multiple times to make more paths in the
+host visible in the guest.
+
+*-w, --workdir* _GUEST_PATH_::
+  Configures _GUEST_PATH_ as the working directory for the first
+  binary executed in the microVM.
+
+
+SEE ALSO
+--------
+*krunvm(1)*, *krunvm-create(1)*

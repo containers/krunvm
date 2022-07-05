@@ -1,0 +1,22 @@
+krunvm-delete(1)
+================
+
+NAME
+----
+krunvm-delete - Deletes an existing microVM
+
+
+SYNOPSIS
+--------
+*krunvm delete* _microVM_
+
+
+DESCRIPTION
+-----------
+*krunvm delete* deletes an existing microVM configuration and requests
+to buildah(1) to unmount and remove the OCI image that was backing it.
+
+
+SEE ALSO
+--------
+*buildah(1)*, *krunvm(1)*

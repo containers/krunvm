@@ -1,0 +1,56 @@
+krunvm-create(1)
+================
+
+NAME
+----
+krunvm-create - Create a new microVM from an OCI image
+
+
+SYNOPSIS
+--------
+*krunvm create* [_OPTIONS_] _IMAGE_
+
+
+DESCRIPTION
+-----------
+*krunvm create* creates a new microVM from the OCI image specified by
+_IMAGE_. Please refer to buildah-from(1) for information about the
+format supported by the _IMAGE_ argument.
+
+
+OPTIONS
+-------
+*--cpus* _NUM_::
+  The number of vCPUs that will be created for this microVM.
+
+*--mem* _NUM_::
+  The amount of RAM, in MiB, that will be available to this microVM.
++
+The memory configured for the microVM will not be reserved
+immediately. Instead, it will be provided as the guest demands it, and
+both the guest and libkrun (acting as the Virtual Machine Monitor)
+will attempt to return as many pages as possible to the host.
+
+*--name* _NAME_::
+  The name to be assigned to this microVM.
+
+*-p, --port* _HOST_PORT:GUEST_PORT_::
+  Exposes a port in the guest running in the microVM through a port in the host.
++
+This option can be specified multiple times to expose as many guest
+ports as desired.
+
+*-v, --volume* _HOST_PATH:GUEST_PATH_::
+  Makes _HOST_PATH_ visible in the guest running in the microVM through _GUEST_PATH_.
++
+This option can be specified multiple times to make more paths in the
+host visible in the guest.
+
+*-w, --workdir* _GUEST_PATH_::
+  Configures _GUEST_PATH_ as the working directory for the first
+  binary executed in the microVM.
+
+
+SEE ALSO
+--------
+*buildah(1)*, *buildah-from(1)*, *krunvm(1)*, *krunvm-changevm(1)*

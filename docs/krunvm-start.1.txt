@@ -1,0 +1,39 @@
+krunvm-start(1)
+===============
+
+NAME
+----
+krunvm-start - Starts an existing microVM
+
+
+SYNOPSIS
+--------
+*krunvm start* [_OPTIONS_] _microVM_ [_COMMAND_] [-- ARGS]
+
+
+DESCRIPTION
+-----------
+*krunvm start* starts an existing microVM created by krunvm-create(1)
+and attaches stdin/stdout to its virtio-console providing a seamless
+experience for interacting with the guest running inside it.
+
+_COMMAND_ is the first binary to be executed in the microVM. If it's
+not present in the command line, krunvm-start(1) defaults to executing
+_/bin/sh_.
+
+Additional arguments for _COMMAND_ can be specified in the command
+line by appending _--_ followed by _ARGS_.
+
+
+OPTIONS
+-------
+*--cpus* _NUM_::
+  Override the number of vCPUs configured for this microVM.
+
+*--mem* _NUM_::
+  Override amount of RAM, in MiB, configured for this microVM.
+
+
+SEE ALSO
+--------
+*krunvm(1)*, *krunvm-create(1)*, *krunvm-changevm(1)*

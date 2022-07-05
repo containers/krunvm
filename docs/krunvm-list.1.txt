@@ -1,0 +1,22 @@
+krunvm-list(1)
+==============
+
+NAME
+----
+krunvm-list - Lists the existing microVMs
+
+
+SYNOPSIS
+--------
+*krunvm list*
+
+
+DESCRIPTION
+-----------
+*krunvm list* lists the microVMs created by *krunvm-create(1)* that
+have not been removed by *krunvm-delete(1)*.
+
+
+SEE ALSO
+--------
+*krunvm(1)*, *krunvm-create(1)*, *krunvm-delete(1)*

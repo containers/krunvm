@@ -1,0 +1,40 @@
+krunvm-config(1)
+================
+
+NAME
+----
+krunvm-config - Configure default values
+
+
+SYNOPSIS
+--------
+*krunvm config* [_OPTIONS_]
+
+
+DESCRIPTION
+-----------
+*krunvm config* configures the default values that will be used for
+newly created microVMs when a explicit value has not been passed to
+*krunvm-create(1)*
+
+When run without any _OPTIONS_ it displays the current default values.
+
+
+OPTIONS
+-------
+*--cpus* _NUM_::
+  Sets the default number of vCPUs that will be configured for newly
+  created microVMs.
+
+*--dns* _IP_::
+  Sets the default IP that will be configured as DNS for newly created
+  microVMs.
+
+*--mem* _NUM_::
+  Sets the default mount of RAM, in MiB, that will be configured for
+  newly created microVMs.
+
+
+SEE ALSO
+--------
+*krunvm(1)*
