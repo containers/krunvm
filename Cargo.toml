@@ -2,6 +2,8 @@
 name = "krunvm"
 version = "0.1.5"
 authors = ["Sergio Lopez <slp@redhat.com>"]
+description = "Create microVMs from OCI images"
+repository = "https://github.com/containers/krunvm"
 license = "Apache-2.0"
 edition = "2018"
 build = "build.rs"
