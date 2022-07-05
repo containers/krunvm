@@ -74,7 +74,7 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
         }
     }
 
-    let mut args = get_buildah_args(&cfg, BuildahCommand::From);
+    let mut args = get_buildah_args(cfg, BuildahCommand::From);
     args.push(image.to_string());
 
     let output = match Command::new("buildah")
@@ -87,7 +87,7 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
             if err.kind() == std::io::ErrorKind::NotFound {
                 println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
             } else {
-                println!("Error executing buildah: {}", err.to_string());
+                println!("Error executing buildah: {}", err);
             }
             std::process::exit(-1);
         }
@@ -119,9 +119,9 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
         mapped_ports,
     };
 
-    let rootfs = mount_container(&cfg, &vmcfg).unwrap();
-    fix_resolv_conf(&rootfs, &dns).unwrap();
-    umount_container(&cfg, &vmcfg).unwrap();
+    let rootfs = mount_container(cfg, &vmcfg).unwrap();
+    fix_resolv_conf(&rootfs, dns).unwrap();
+    umount_container(cfg, &vmcfg).unwrap();
 
     cfg.vmconfig_map.insert(name.clone(), vmcfg);
     confy::store(APP_NAME, cfg).unwrap();

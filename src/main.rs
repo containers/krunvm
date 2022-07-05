@@ -143,11 +143,7 @@ volume.
 #[cfg(target_os = "linux")]
 fn check_unshare() {
     let uid = unsafe { libc::getuid() };
-    if uid != 0
-        && std::env::vars()
-            .find(|(key, _)| key == "BUILDAH_ISOLATION")
-            .is_none()
-    {
+    if uid != 0 && !std::env::vars().any(|(key, _)| key == "BUILDAH_ISOLATION") {
         println!("Please re-run krunvm inside a \"buildah unshare\" session");
         std::process::exit(-1);
     }
@@ -356,17 +352,17 @@ fn main() {
     #[cfg(target_os = "linux")]
     check_unshare();
 
-    if let Some(ref matches) = matches.subcommand_matches("changevm") {
+    if let Some(matches) = matches.subcommand_matches("changevm") {
         changevm::changevm(&mut cfg, matches);
-    } else if let Some(ref matches) = matches.subcommand_matches("config") {
+    } else if let Some(matches) = matches.subcommand_matches("config") {
         config::config(&mut cfg, matches);
-    } else if let Some(ref matches) = matches.subcommand_matches("create") {
+    } else if let Some(matches) = matches.subcommand_matches("create") {
         create::create(&mut cfg, matches);
-    } else if let Some(ref matches) = matches.subcommand_matches("delete") {
+    } else if let Some(matches) = matches.subcommand_matches("delete") {
         delete::delete(&mut cfg, matches);
-    } else if let Some(ref matches) = matches.subcommand_matches("list") {
+    } else if let Some(matches) = matches.subcommand_matches("list") {
         list::list(&cfg, matches);
-    } else if let Some(ref matches) = matches.subcommand_matches("start") {
+    } else if let Some(matches) = matches.subcommand_matches("start") {
         start::start(&cfg, matches);
     } else {
         app.print_long_help().unwrap();

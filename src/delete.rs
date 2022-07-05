@@ -16,8 +16,8 @@ pub fn delete(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
         Some(vmcfg) => vmcfg,
     };
 
-    umount_container(&cfg, &vmcfg).unwrap();
-    remove_container(&cfg, &vmcfg).unwrap();
+    umount_container(cfg, &vmcfg).unwrap();
+    remove_container(cfg, &vmcfg).unwrap();
 
     confy::store(APP_NAME, &cfg).unwrap();
 }

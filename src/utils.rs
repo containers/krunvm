@@ -147,7 +147,7 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
             if err.kind() == std::io::ErrorKind::NotFound {
                 println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
             } else {
-                println!("Error executing buildah: {}", err.to_string());
+                println!("Error executing buildah: {}", err);
             }
             std::process::exit(-1);
         }
@@ -181,7 +181,7 @@ pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
             if err.kind() == std::io::ErrorKind::NotFound {
                 println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
             } else {
-                println!("Error executing buildah: {}", err.to_string());
+                println!("Error executing buildah: {}", err);
             }
             std::process::exit(-1);
         }
@@ -214,7 +214,7 @@ pub fn remove_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
             if err.kind() == std::io::ErrorKind::NotFound {
                 println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
             } else {
-                println!("Error executing buildah: {}", err.to_string());
+                println!("Error executing buildah: {}", err);
             }
             std::process::exit(-1);
         }
