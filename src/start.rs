@@ -84,7 +84,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
         std::process::exit(-1);
     }
 
-    map_volumes(ctx, &vmcfg, rootfs);
+    map_volumes(ctx, vmcfg, rootfs);
 
     let mut ports = Vec::new();
     for (host_port, guest_port) in vmcfg.mapped_ports.iter() {
@@ -187,8 +187,8 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
         Some(vmcfg) => vmcfg,
     };
 
-    umount_container(&cfg, vmcfg).expect("Error unmounting container");
-    let rootfs = mount_container(&cfg, vmcfg).expect("Error mounting container");
+    umount_container(cfg, vmcfg).expect("Error unmounting container");
+    let rootfs = mount_container(cfg, vmcfg).expect("Error mounting container");
 
     let args: Vec<CString> = match matches.values_of("ARGS") {
         Some(a) => a.map(|val| CString::new(val).unwrap()).collect(),
@@ -201,5 +201,5 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
 
     unsafe { exec_vm(vmcfg, &rootfs, cmd, args) };
 
-    umount_container(&cfg, vmcfg).expect("Error unmounting container");
+    umount_container(cfg, vmcfg).expect("Error unmounting container");
 }
