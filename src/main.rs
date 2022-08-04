@@ -271,7 +271,7 @@ fn main() {
                         .short("w")
                         .help("Working directory inside the microVM")
                         .takes_value(true)
-                        .default_value("/root"),
+                        .default_value(""),
                 )
                 .arg(
                     Arg::with_name("volume")
@@ -334,8 +334,7 @@ fn main() {
                 .arg(
                     Arg::with_name("COMMAND")
                         .help("Command to run inside the VM")
-                        .index(2)
-                        .default_value("/bin/sh"),
+                        .index(2),
                 )
                 .arg(
                     Arg::with_name("ARGS")
