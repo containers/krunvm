@@ -9,6 +9,7 @@ use crate::{KrunvmConfig, VmConfig, APP_NAME};
 
 pub enum BuildahCommand {
     From,
+    Inspect,
     Mount,
     Unmount,
     Remove,
@@ -18,6 +19,7 @@ pub enum BuildahCommand {
 pub fn get_buildah_args(_cfg: &KrunvmConfig, cmd: BuildahCommand) -> Vec<String> {
     match cmd {
         BuildahCommand::From => vec!["from".to_string()],
+        BuildahCommand::Inspect => vec!["inspect".to_string()],
         BuildahCommand::Mount => vec!["mount".to_string()],
         BuildahCommand::Unmount => vec!["umount".to_string()],
         BuildahCommand::Remove => vec!["rm".to_string()],
