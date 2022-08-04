@@ -22,6 +22,45 @@ fn fix_resolv_conf(rootfs: &str, dns: &str) -> Result<(), std::io::Error> {
     Ok(())
 }
 
+fn export_container_config(
+    cfg: &KrunvmConfig,
+    rootfs: &str,
+    image: &str,
+) -> Result<(), std::io::Error> {
+    let mut args = get_buildah_args(cfg, BuildahCommand::Inspect);
+    args.push(image.to_string());
+
+    let output = match Command::new("buildah")
+        .args(&args)
+        .stderr(std::process::Stdio::inherit())
+        .output()
+    {
+        Ok(output) => output,
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::NotFound {
+                println!("{} requires buildah to manage the OCI images, and it wasn't found on this system.", APP_NAME);
+            } else {
+                println!("Error executing buildah: {}", err);
+            }
+            std::process::exit(-1);
+        }
+    };
+
+    let exit_code = output.status.code().unwrap_or(-1);
+    if exit_code != 0 {
+        println!(
+            "buildah returned an error: {}",
+            std::str::from_utf8(&output.stdout).unwrap()
+        );
+        std::process::exit(-1);
+    }
+
+    let mut file = fs::File::create(format!("{}/.krun_config.json", rootfs))?;
+    file.write_all(&output.stdout)?;
+
+    Ok(())
+}
+
 pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     let cpus = match matches.value_of("cpus") {
         Some(c) => match c.parse::<u32>() {
@@ -120,6 +159,7 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     };
 
     let rootfs = mount_container(cfg, &vmcfg).unwrap();
+    export_container_config(cfg, &rootfs, image).unwrap();
     fix_resolv_conf(&rootfs, dns).unwrap();
     umount_container(cfg, &vmcfg).unwrap();
 

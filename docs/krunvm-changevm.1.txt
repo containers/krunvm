@@ -57,6 +57,9 @@ host visible in the guest.
 *-w, --workdir* _GUEST_PATH_::
   Configures _GUEST_PATH_ as the working directory for the first
   binary executed in the microVM.
++
+An empty string ("") tells krunvm to not set a working directory
+explicitly, letting libkrun decide which one should be set.
 
 
 SEE ALSO

@@ -66,7 +66,7 @@ fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
     }
 }
 
-unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>) {
+unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<CString>) {
     //bindings::krun_set_log_level(9);
 
     let ctx = bindings::krun_create_ctx() as u32;
@@ -102,39 +102,43 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: &str, args: Vec<CString>)
         std::process::exit(-1);
     }
 
-    let c_workdir = CString::new(vmcfg.workdir.clone()).unwrap();
-    let ret = bindings::krun_set_workdir(ctx, c_workdir.as_ptr() as *const i8);
-    if ret < 0 {
-        println!("Error setting VM workdir");
-        std::process::exit(-1);
+    if !vmcfg.workdir.is_empty() {
+        let c_workdir = CString::new(vmcfg.workdir.clone()).unwrap();
+        let ret = bindings::krun_set_workdir(ctx, c_workdir.as_ptr() as *const i8);
+        if ret < 0 {
+            println!("Error setting VM workdir");
+            std::process::exit(-1);
+        }
     }
 
-    let mut argv: Vec<*const i8> = Vec::new();
-    for a in args.iter() {
-        argv.push(a.as_ptr() as *const i8);
-    }
-    argv.push(std::ptr::null());
+    if let Some(cmd) = cmd {
+        let mut argv: Vec<*const i8> = Vec::new();
+        for a in args.iter() {
+            argv.push(a.as_ptr() as *const i8);
+        }
+        argv.push(std::ptr::null());
 
-    let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
-    let home = CString::new("HOME=/root").unwrap();
-    let path = CString::new("PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin").unwrap();
-    let env: [*const i8; 4] = [
-        hostname.as_ptr() as *const i8,
-        home.as_ptr() as *const i8,
-        path.as_ptr() as *const i8,
-        std::ptr::null(),
-    ];
+        let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
+        let home = CString::new("HOME=/root").unwrap();
+        let path = CString::new("PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin").unwrap();
+        let env: [*const i8; 4] = [
+            hostname.as_ptr() as *const i8,
+            home.as_ptr() as *const i8,
+            path.as_ptr() as *const i8,
+            std::ptr::null(),
+        ];
 
-    let c_cmd = CString::new(cmd).unwrap();
-    let ret = bindings::krun_set_exec(
-        ctx,
-        c_cmd.as_ptr() as *const i8,
-        argv.as_ptr() as *const *const i8,
-        env.as_ptr() as *const *const i8,
-    );
-    if ret < 0 {
-        println!("Error setting VM config");
-        std::process::exit(-1);
+        let c_cmd = CString::new(cmd).unwrap();
+        let ret = bindings::krun_set_exec(
+            ctx,
+            c_cmd.as_ptr() as *const i8,
+            argv.as_ptr() as *const *const i8,
+            env.as_ptr() as *const *const i8,
+        );
+        if ret < 0 {
+            println!("Error setting VM config");
+            std::process::exit(-1);
+        }
     }
 
     let ret = bindings::krun_start_enter(ctx);
@@ -176,7 +180,7 @@ fn set_lock(rootfs: &str) -> File {
 }
 
 pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
-    let cmd = matches.value_of("COMMAND").unwrap();
+    let cmd = matches.value_of("COMMAND");
     let name = matches.value_of("NAME").unwrap();
 
     let vmcfg = match cfg.vmconfig_map.get(name) {
@@ -190,9 +194,13 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
     umount_container(cfg, vmcfg).expect("Error unmounting container");
     let rootfs = mount_container(cfg, vmcfg).expect("Error mounting container");
 
-    let args: Vec<CString> = match matches.values_of("ARGS") {
-        Some(a) => a.map(|val| CString::new(val).unwrap()).collect(),
-        None => Vec::new(),
+    let args: Vec<CString> = if cmd.is_some() {
+        match matches.values_of("ARGS") {
+            Some(a) => a.map(|val| CString::new(val).unwrap()).collect(),
+            None => Vec::new(),
+        }
+    } else {
+        Vec::new()
     };
 
     set_rlimits();
