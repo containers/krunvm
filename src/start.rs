@@ -111,22 +111,20 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
         }
     }
 
+    let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
+    let home = CString::new("HOME=/root").unwrap();
+    let env: [*const i8; 3] = [
+        hostname.as_ptr() as *const i8,
+        home.as_ptr() as *const i8,
+        std::ptr::null(),
+    ];
+
     if let Some(cmd) = cmd {
         let mut argv: Vec<*const i8> = Vec::new();
         for a in args.iter() {
             argv.push(a.as_ptr() as *const i8);
         }
         argv.push(std::ptr::null());
-
-        let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
-        let home = CString::new("HOME=/root").unwrap();
-        let path = CString::new("PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin").unwrap();
-        let env: [*const i8; 4] = [
-            hostname.as_ptr() as *const i8,
-            home.as_ptr() as *const i8,
-            path.as_ptr() as *const i8,
-            std::ptr::null(),
-        ];
 
         let c_cmd = CString::new(cmd).unwrap();
         let ret = bindings::krun_set_exec(
@@ -137,6 +135,12 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
         );
         if ret < 0 {
             println!("Error setting VM config");
+            std::process::exit(-1);
+        }
+    } else {
+        let ret = bindings::krun_set_env(ctx, env.as_ptr() as *const *const i8);
+        if ret < 0 {
+            println!("Error setting VM environment variables");
             std::process::exit(-1);
         }
     }

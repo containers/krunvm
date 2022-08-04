@@ -17,5 +17,6 @@ extern "C" {
         argv: *const *const i8,
         envp: *const *const i8,
     ) -> i32;
+    pub fn krun_set_env(ctx: u32, envp: *const *const i8) -> i32;
     pub fn krun_start_enter(ctx: u32) -> i32;
 }
