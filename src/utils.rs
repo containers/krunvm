@@ -55,6 +55,9 @@ pub fn get_buildah_args(cfg: &KrunvmConfig, cmd: BuildahCommand) -> Vec<String> 
             args.push("--os".to_string());
             args.push("linux".to_string());
         }
+        BuildahCommand::Inspect => {
+            args.push("inspect".to_string());
+        }
         BuildahCommand::Mount => {
             args.push("mount".to_string());
         }
