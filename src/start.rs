@@ -113,11 +113,9 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
 
     let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
     let home = CString::new("HOME=/root").unwrap();
-    let path = CString::new("PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin").unwrap();
-    let env: [*const i8; 4] = [
+    let env: [*const i8; 3] = [
         hostname.as_ptr() as *const i8,
         home.as_ptr() as *const i8,
-        path.as_ptr() as *const i8,
         std::ptr::null(),
     ];
 
