@@ -137,6 +137,34 @@ pub fn parse_mapped_volumes(volume_matches: Vec<&str>) -> HashMap<String, String
     mapped_volumes
 }
 
+#[cfg(target_os = "macos")]
+fn fix_root_mode(rootfs: &str) {
+    let mut args = vec!["-w", "user.containers.override_stat", "0:0:0555"];
+    args.push(rootfs);
+
+    let output = match Command::new("xattr")
+        .args(&args)
+        .stderr(std::process::Stdio::inherit())
+        .output()
+    {
+        Ok(output) => output,
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::NotFound {
+                println!("{} requires xattr to manage the OCI images, and it wasn't found on this system.", APP_NAME);
+            } else {
+                println!("Error executing xattr: {}", err);
+            }
+            std::process::exit(-1);
+        }
+    };
+
+    let exit_code = output.status.code().unwrap_or(-1);
+    if exit_code != 0 {
+        println!("xattr returned an error: {}", exit_code);
+        std::process::exit(-1);
+    }
+}
+
 #[allow(unused_variables)]
 pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, std::io::Error> {
     let mut args = get_buildah_args(cfg, BuildahCommand::Mount);
@@ -168,6 +196,10 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
     }
 
     let rootfs = std::str::from_utf8(&output.stdout).unwrap().trim();
+
+    #[cfg(target_os = "macos")]
+    fix_root_mode(&rootfs);
+
     Ok(rootfs.to_string())
 }
 
