@@ -195,7 +195,8 @@ fn main() {
                         .short("v")
                         .help("Volume in form \"host_path:guest_path\" to be exposed to the guest")
                         .takes_value(true)
-                        .multiple(true),
+                        .multiple(true)
+                        .number_of_values(1),
                 )
                 .arg(
                     Arg::with_name("remove-ports")
@@ -208,7 +209,8 @@ fn main() {
                         .short("p")
                         .help("Port in format \"host_port:guest_port\" to be exposed to the host")
                         .takes_value(true)
-                        .multiple(true),
+                        .multiple(true)
+                        .number_of_values(1),
                 )
                 .arg(
                     Arg::with_name("new-name")
@@ -279,7 +281,8 @@ fn main() {
                         .short("v")
                         .help("Volume in form \"host_path:guest_path\" to be exposed to the guest")
                         .takes_value(true)
-                        .multiple(true),
+                        .multiple(true)
+                        .number_of_values(1),
                 )
                 .arg(
                     Arg::with_name("port")
@@ -287,7 +290,8 @@ fn main() {
                         .short("p")
                         .help("Port in format \"host_port:guest_port\" to be exposed to the host")
                         .takes_value(true)
-                        .multiple(true),
+                        .multiple(true)
+                        .number_of_values(1),
                 )
                 .arg(
                     Arg::with_name("name")
