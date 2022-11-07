@@ -247,65 +247,6 @@ fn main() {
                 ),
         )
         .subcommand(
-            App::new("create")
-                .about("Create a new microVM")
-                .arg(
-                    Arg::with_name("cpus")
-                        .long("cpus")
-                        .help("Number of vCPUs")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("mem")
-                        .long("mem")
-                        .help("Amount of RAM in MiB")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("dns")
-                        .long("dns")
-                        .help("DNS server to use in the microVM")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("workdir")
-                        .long("workdir")
-                        .short("w")
-                        .help("Working directory inside the microVM")
-                        .takes_value(true)
-                        .default_value(""),
-                )
-                .arg(
-                    Arg::with_name("volume")
-                        .long("volume")
-                        .short("v")
-                        .help("Volume in form \"host_path:guest_path\" to be exposed to the guest")
-                        .takes_value(true)
-                        .multiple(true)
-                        .number_of_values(1),
-                )
-                .arg(
-                    Arg::with_name("port")
-                        .long("port")
-                        .short("p")
-                        .help("Port in format \"host_port:guest_port\" to be exposed to the host")
-                        .takes_value(true)
-                        .multiple(true)
-                        .number_of_values(1),
-                )
-                .arg(
-                    Arg::with_name("name")
-                        .long("name")
-                        .help("Assign a name to the VM")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("IMAGE")
-                        .help("OCI image to use as template")
-                        .required(true),
-                ),
-        )
-        .subcommand(
             App::new("delete").about("Delete an existing microVM").arg(
                 Arg::with_name("NAME")
                     .help("Name of the microVM to be deleted")
@@ -347,6 +288,75 @@ fn main() {
                         .last(true),
                 ),
         );
+
+    let mut create = App::new("create")
+        .about("Create a new microVM")
+        .arg(
+            Arg::with_name("cpus")
+                .long("cpus")
+                .help("Number of vCPUs")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("mem")
+                .long("mem")
+                .help("Amount of RAM in MiB")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("dns")
+                .long("dns")
+                .help("DNS server to use in the microVM")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("workdir")
+                .long("workdir")
+                .short("w")
+                .help("Working directory inside the microVM")
+                .takes_value(true)
+                .default_value(""),
+        )
+        .arg(
+            Arg::with_name("volume")
+                .long("volume")
+                .short("v")
+                .help("Volume in form \"host_path:guest_path\" to be exposed to the guest")
+                .takes_value(true)
+                .multiple(true)
+                .number_of_values(1),
+        )
+        .arg(
+            Arg::with_name("port")
+                .long("port")
+                .short("p")
+                .help("Port in format \"host_port:guest_port\" to be exposed to the host")
+                .takes_value(true)
+                .multiple(true)
+                .number_of_values(1),
+        )
+        .arg(
+            Arg::with_name("name")
+                .long("name")
+                .help("Assign a name to the VM")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("IMAGE")
+                .help("OCI image to use as template")
+                .required(true),
+        );
+
+    if cfg!(target_os = "macos") {
+        create = create.arg(
+            Arg::with_name("x86")
+                .long("x86")
+                .short("x")
+                .help("Create a x86_64 microVM even on an Aarch64 host"),
+        );
+    }
+
+    app = app.subcommand(create);
 
     let matches = app.clone().get_matches();
 
