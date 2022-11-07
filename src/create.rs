@@ -3,6 +3,8 @@
 
 use std::fs;
 use std::io::Write;
+#[cfg(target_os = "macos")]
+use std::path::Path;
 use std::process::Command;
 
 use super::utils::{
@@ -10,6 +12,9 @@ use super::utils::{
     BuildahCommand,
 };
 use crate::{ArgMatches, KrunvmConfig, VmConfig, APP_NAME};
+
+#[cfg(target_os = "macos")]
+const KRUNVM_ROSETTA_FILE: &str = ".krunvm-rosetta";
 
 fn fix_resolv_conf(rootfs: &str, dns: &str) -> Result<(), std::io::Error> {
     let resolvconf_dir = format!("{}/etc/", rootfs);
@@ -62,7 +67,7 @@ fn export_container_config(
 }
 
 pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
-    let cpus = match matches.value_of("cpus") {
+    let mut cpus = match matches.value_of("cpus") {
         Some(c) => match c.parse::<u32>() {
             Err(_) => {
                 println!("Invalid value for \"cpus\"");
@@ -114,6 +119,47 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     }
 
     let mut args = get_buildah_args(cfg, BuildahCommand::From);
+
+    #[cfg(target_os = "macos")]
+    let force_x86 = matches.is_present("x86");
+
+    #[cfg(target_os = "macos")]
+    if force_x86 {
+        let home = match std::env::var("HOME") {
+            Err(e) => {
+                println!("Error reading \"HOME\" enviroment variable: {}", e);
+                std::process::exit(-1);
+            }
+            Ok(home) => home,
+        };
+
+        let path = format!("{}/{}", home, KRUNVM_ROSETTA_FILE);
+        if !Path::new(&path).is_file() {
+            println!(
+                "
+To use Rosetta for Linux you need to create the file...
+
+{}
+
+...with the contents that the \"rosetta\" binary expects to be served from
+its specific ioctl.
+
+For more information, please refer to this post:
+https://threedots.ovh/blog/2022/06/quick-look-at-rosetta-on-linux/
+",
+                path
+            );
+            std::process::exit(-1);
+        }
+
+        if cpus != 1 {
+            println!("x86 microVMs on Aarch64 are restricted to 1 CPU");
+            cpus = 1;
+        }
+        args.push("--arch".to_string());
+        args.push("x86_64".to_string());
+    }
+
     args.push(image.to_string());
 
     let output = match Command::new("buildah")
@@ -161,6 +207,10 @@ pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     let rootfs = mount_container(cfg, &vmcfg).unwrap();
     export_container_config(cfg, &rootfs, image).unwrap();
     fix_resolv_conf(&rootfs, dns).unwrap();
+    #[cfg(target_os = "macos")]
+    if force_x86 {
+        _ = fs::create_dir(format!("{}/.rosetta", rootfs));
+    }
     umount_container(cfg, &vmcfg).unwrap();
 
     cfg.vmconfig_map.insert(name.clone(), vmcfg);
