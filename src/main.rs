@@ -247,12 +247,20 @@ fn main() {
                 ),
         )
         .subcommand(
-            App::new("delete").about("Delete an existing microVM").arg(
-                Arg::with_name("NAME")
-                    .help("Name of the microVM to be deleted")
-                    .required(true)
-                    .index(1),
-            ),
+            App::new("delete")
+                .about("Delete an existing microVM")
+                .arg(
+                    Arg::with_name("NAME")
+                        .help("Name of the microVM to be deleted")
+                        .required(true)
+                        .index(1),
+                )
+                .arg(
+                    Arg::with_name("force")
+                        .long("force")
+                        .short("f")
+                        .help("Force deletion even in case of buildah error"),
+                ),
         )
         .subcommand(
             App::new("list").about("List microVMs").arg(

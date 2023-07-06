@@ -211,7 +211,7 @@ https://threedots.ovh/blog/2022/06/quick-look-at-rosetta-on-linux/
     if force_x86 {
         _ = fs::create_dir(format!("{}/.rosetta", rootfs));
     }
-    umount_container(cfg, &vmcfg).unwrap();
+    umount_container(cfg, &vmcfg, false).unwrap();
 
     cfg.vmconfig_map.insert(name.clone(), vmcfg);
     confy::store(APP_NAME, cfg).unwrap();

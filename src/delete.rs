@@ -7,6 +7,7 @@ use super::utils::{remove_container, umount_container};
 
 pub fn delete(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
     let name = matches.value_of("NAME").unwrap();
+    let force = matches.is_present("force");
 
     let vmcfg = match cfg.vmconfig_map.remove(name) {
         None => {
@@ -16,8 +17,8 @@ pub fn delete(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
         Some(vmcfg) => vmcfg,
     };
 
-    umount_container(cfg, &vmcfg).unwrap();
-    remove_container(cfg, &vmcfg).unwrap();
+    umount_container(cfg, &vmcfg, force).unwrap();
+    remove_container(cfg, &vmcfg, force).unwrap();
 
     confy::store(APP_NAME, &cfg).unwrap();
 }

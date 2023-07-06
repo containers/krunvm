@@ -204,7 +204,11 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
 }
 
 #[allow(unused_variables)]
-pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std::io::Error> {
+pub fn umount_container(
+    cfg: &KrunvmConfig,
+    vmcfg: &VmConfig,
+    force: bool,
+) -> Result<(), std::io::Error> {
     let mut args = get_buildah_args(cfg, BuildahCommand::Unmount);
     args.push(vmcfg.container.clone());
 
@@ -230,14 +234,20 @@ pub fn umount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
             "buildah returned an error: {}",
             std::str::from_utf8(&output.stdout).unwrap()
         );
-        std::process::exit(-1);
+        if !force {
+            std::process::exit(-1);
+        }
     }
 
     Ok(())
 }
 
 #[allow(unused_variables)]
-pub fn remove_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std::io::Error> {
+pub fn remove_container(
+    cfg: &KrunvmConfig,
+    vmcfg: &VmConfig,
+    force: bool,
+) -> Result<(), std::io::Error> {
     let mut args = get_buildah_args(cfg, BuildahCommand::Remove);
     args.push(vmcfg.container.clone());
 
@@ -263,7 +273,9 @@ pub fn remove_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<(), std:
             "buildah returned an error: {}",
             std::str::from_utf8(&output.stdout).unwrap()
         );
-        std::process::exit(-1);
+        if !force {
+            std::process::exit(-1);
+        }
     }
 
     Ok(())
