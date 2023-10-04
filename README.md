@@ -46,6 +46,7 @@ dnf install -y krunvm
 * Rust Toolchain
 * [libkrun](https://github.com/containers/libkrun)
 * [buildah](https://github.com/containers/buildah)
+* [asciidoctor](https://github.com/asciidoctor/asciidoctor)
 
 #### Building
 
