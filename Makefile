@@ -1,7 +1,6 @@
 OS = $(shell uname -s)
 KRUNVM_RELEASE = target/release/krunvm
 KRUNVM_DEBUG = target/debug/krunvm
-INIT_BINARY = init/init
 
 ifeq ($(PREFIX),)
     PREFIX := /usr/local
