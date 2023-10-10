@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
+use std::str::FromStr;
 
 use crate::{KrunvmConfig, VmConfig, APP_NAME};
 
@@ -71,70 +72,93 @@ pub fn get_buildah_args(cfg: &KrunvmConfig, cmd: BuildahCommand) -> Vec<String> 
     args
 }
 
-pub fn parse_mapped_ports(port_matches: Vec<&str>) -> HashMap<String, String> {
-    let mut mapped_ports = HashMap::new();
-    for port in port_matches.iter() {
-        let vtuple: Vec<&str> = port.split(':').collect();
+#[derive(Debug, Clone)]
+pub struct PortPair {
+    pub host_port: String,
+    pub guest_port: String,
+}
+
+pub fn port_pairs_to_hash_map(
+    port_pairs: impl IntoIterator<Item = PortPair>,
+) -> HashMap<String, String> {
+    port_pairs
+        .into_iter()
+        .map(|pair: PortPair| (pair.host_port, pair.guest_port))
+        .collect()
+}
+
+impl FromStr for PortPair {
+    type Err = &'static str;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let vtuple: Vec<&str> = input.split(':').collect();
         if vtuple.len() != 2 {
-            println!("Invalid value for \"port\"");
-            std::process::exit(-1);
+            return Err("Too many ':' separators");
         }
         let host_port: u16 = match vtuple[0].parse() {
             Ok(p) => p,
             Err(_) => {
-                println!("Invalid host port");
-                std::process::exit(-1);
+                return Err("Invalid host port");
             }
         };
         let guest_port: u16 = match vtuple[1].parse() {
             Ok(p) => p,
             Err(_) => {
-                println!("Invalid guest port");
-                std::process::exit(-1);
+                return Err("Invalid guest port");
             }
         };
-
-        mapped_ports.insert(host_port.to_string(), guest_port.to_string());
+        Ok(PortPair {
+            host_port: host_port.to_string(),
+            guest_port: guest_port.to_string(),
+        })
     }
-
-    mapped_ports
 }
 
-pub fn parse_mapped_volumes(volume_matches: Vec<&str>) -> HashMap<String, String> {
-    let mut mapped_volumes = HashMap::new();
-    for volume in volume_matches.iter() {
-        let vtuple: Vec<&str> = volume.split(':').collect();
+#[derive(Debug, Clone)]
+pub struct PathPair {
+    pub host_path: String,
+    pub guest_path: String,
+}
+
+pub fn path_pairs_to_hash_map(
+    volume_pairs: impl IntoIterator<Item = PathPair>,
+) -> HashMap<String, String> {
+    volume_pairs
+        .into_iter()
+        .map(|pair: PathPair| (pair.host_path, pair.guest_path))
+        .collect()
+}
+
+impl FromStr for PathPair {
+    type Err = &'static str;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let vtuple: Vec<&str> = input.split(':').collect();
         if vtuple.len() != 2 {
-            println!("Invalid value for \"volume\"");
-            std::process::exit(-1);
+            return Err("Too many ':' separators");
         }
+
         let host_path = Path::new(vtuple[0]);
         if !host_path.is_absolute() {
-            println!("Invalid volume, host_path is not an absolute path");
-            std::process::exit(-1);
+            return Err("Invalid volume, host_path is not an absolute path");
         }
         if !host_path.exists() {
-            println!("Invalid volume, host_path does not exists");
-            std::process::exit(-1);
+            return Err("Invalid volume, host_path does not exists");
         }
         let guest_path = Path::new(vtuple[1]);
         if !guest_path.is_absolute() {
-            println!("Invalid volume, guest_path is not an absolute path");
-            std::process::exit(-1);
+            return Err("Invalid volume, guest_path is not an absolute path");
         }
         if guest_path.components().count() != 2 {
-            println!(
-                "Invalid volume, only single direct root children are supported as guest_path"
+            return Err(
+                "Invalid volume, only single direct root children are supported as guest_path",
             );
-            std::process::exit(-1);
         }
-        mapped_volumes.insert(
-            host_path.to_str().unwrap().to_string(),
-            guest_path.to_str().unwrap().to_string(),
-        );
+        Ok(Self {
+            host_path: vtuple[0].to_string(),
+            guest_path: vtuple[1].to_string(),
+        })
     }
-
-    mapped_volumes
 }
 
 #[cfg(target_os = "macos")]

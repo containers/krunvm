@@ -7,11 +7,16 @@ use std::fs::File;
 #[cfg(target_os = "macos")]
 use std::io::{self, Read, Write};
 
-use clap::{crate_version, App, Arg, ArgMatches};
+use crate::changevm::ChangeVmCmdArgs;
+use crate::config::ConfigCmdArgs;
+use crate::create::CreateCmdArgs;
+use crate::delete::DeleteCmdArgs;
+use crate::list::ListCmdArgs;
+use crate::start::StartCmdArgs;
+use clap::{Parser, Subcommand};
 use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
 use text_io::read;
-
 #[allow(unused)]
 mod bindings;
 mod changevm;
@@ -149,236 +154,42 @@ fn check_unshare() {
     }
 }
 
+#[derive(Parser, Debug)]
+#[command(author, version, about)]
+struct Cli {
+    /// Sets the level of verbosity
+    #[arg(short)]
+    verbosity: Option<u8>, //TODO: implement or remove this
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    Start(StartCmdArgs),
+    Create(CreateCmdArgs),
+    List(ListCmdArgs),
+    Delete(DeleteCmdArgs),
+    #[command(name = "changevm")]
+    ChangeVm(ChangeVmCmdArgs),
+    Config(ConfigCmdArgs),
+}
+
 fn main() {
     let mut cfg: KrunvmConfig = confy::load(APP_NAME).unwrap();
-
-    let mut app = App::new("krunvm")
-        .version(crate_version!())
-        .author("Sergio Lopez <slp@redhat.com>")
-        .about("Manage microVMs created from OCI images")
-        .arg(
-            Arg::with_name("v")
-                .short("v")
-                .multiple(true)
-                .help("Sets the level of verbosity"),
-        )
-        .subcommand(
-            App::new("changevm")
-                .about("Change the configuration of a microVM")
-                .arg(
-                    Arg::with_name("cpus")
-                        .long("cpus")
-                        .help("Number of vCPUs")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("mem")
-                        .long("mem")
-                        .help("Amount of RAM in MiB")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("workdir")
-                        .long("workdir")
-                        .short("w")
-                        .help("Working directory inside the microVM")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("remove-volumes")
-                        .long("remove-volumes")
-                        .help("Remove all volume mappings"),
-                )
-                .arg(
-                    Arg::with_name("volume")
-                        .long("volume")
-                        .short("v")
-                        .help("Volume in form \"host_path:guest_path\" to be exposed to the guest")
-                        .takes_value(true)
-                        .multiple(true)
-                        .number_of_values(1),
-                )
-                .arg(
-                    Arg::with_name("remove-ports")
-                        .long("remove-ports")
-                        .help("Remove all port mappings"),
-                )
-                .arg(
-                    Arg::with_name("port")
-                        .long("port")
-                        .short("p")
-                        .help("Port in format \"host_port:guest_port\" to be exposed to the host")
-                        .takes_value(true)
-                        .multiple(true)
-                        .number_of_values(1),
-                )
-                .arg(
-                    Arg::with_name("new-name")
-                        .long("name")
-                        .help("Assign a new name to the VM")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("NAME")
-                        .help("Name of the VM to be modified")
-                        .required(true),
-                ),
-        )
-        .subcommand(
-            App::new("config")
-                .about("Configure global values")
-                .arg(
-                    Arg::with_name("cpus")
-                        .long("cpus")
-                        .help("Default number of vCPUs for newly created VMs")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("mem")
-                        .long("mem")
-                        .help("Default amount of RAM in MiB for newly created VMs")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("dns")
-                        .long("dns")
-                        .help("DNS server to use in the microVM")
-                        .takes_value(true),
-                ),
-        )
-        .subcommand(
-            App::new("delete").about("Delete an existing microVM").arg(
-                Arg::with_name("NAME")
-                    .help("Name of the microVM to be deleted")
-                    .required(true)
-                    .index(1),
-            ),
-        )
-        .subcommand(
-            App::new("list").about("List microVMs").arg(
-                Arg::with_name("debug")
-                    .short("d")
-                    .help("print debug information verbosely"),
-            ),
-        )
-        .subcommand(
-            App::new("start")
-                .about("Start an existing microVM")
-                .arg(Arg::with_name("cpus").long("cpus").help("Number of vCPUs"))
-                .arg(
-                    Arg::with_name("mem")
-                        .long("mem")
-                        .help("Amount of RAM in MiB"),
-                )
-                .arg(
-                    Arg::with_name("NAME")
-                        .help("Name of the microVM")
-                        .required(true)
-                        .index(1),
-                )
-                .arg(
-                    Arg::with_name("COMMAND")
-                        .help("Command to run inside the VM")
-                        .index(2),
-                )
-                .arg(
-                    Arg::with_name("ARGS")
-                        .help("Arguments to be passed to the command executed in the VM")
-                        .multiple(true)
-                        .last(true),
-                ),
-        );
-
-    let mut create = App::new("create")
-        .about("Create a new microVM")
-        .arg(
-            Arg::with_name("cpus")
-                .long("cpus")
-                .help("Number of vCPUs")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("mem")
-                .long("mem")
-                .help("Amount of RAM in MiB")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("dns")
-                .long("dns")
-                .help("DNS server to use in the microVM")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("workdir")
-                .long("workdir")
-                .short("w")
-                .help("Working directory inside the microVM")
-                .takes_value(true)
-                .default_value(""),
-        )
-        .arg(
-            Arg::with_name("volume")
-                .long("volume")
-                .short("v")
-                .help("Volume in form \"host_path:guest_path\" to be exposed to the guest")
-                .takes_value(true)
-                .multiple(true)
-                .number_of_values(1),
-        )
-        .arg(
-            Arg::with_name("port")
-                .long("port")
-                .short("p")
-                .help("Port in format \"host_port:guest_port\" to be exposed to the host")
-                .takes_value(true)
-                .multiple(true)
-                .number_of_values(1),
-        )
-        .arg(
-            Arg::with_name("name")
-                .long("name")
-                .help("Assign a name to the VM")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("IMAGE")
-                .help("OCI image to use as template")
-                .required(true),
-        );
-
-    if cfg!(target_os = "macos") {
-        create = create.arg(
-            Arg::with_name("x86")
-                .long("x86")
-                .short("x")
-                .help("Create a x86_64 microVM even on an Aarch64 host"),
-        );
-    }
-
-    app = app.subcommand(create);
-
-    let matches = app.clone().get_matches();
+    let cli_args = Cli::parse();
 
     #[cfg(target_os = "macos")]
     check_volume(&mut cfg);
     #[cfg(target_os = "linux")]
     check_unshare();
 
-    if let Some(matches) = matches.subcommand_matches("changevm") {
-        changevm::changevm(&mut cfg, matches);
-    } else if let Some(matches) = matches.subcommand_matches("config") {
-        config::config(&mut cfg, matches);
-    } else if let Some(matches) = matches.subcommand_matches("create") {
-        create::create(&mut cfg, matches);
-    } else if let Some(matches) = matches.subcommand_matches("delete") {
-        delete::delete(&mut cfg, matches);
-    } else if let Some(matches) = matches.subcommand_matches("list") {
-        list::list(&cfg, matches);
-    } else if let Some(matches) = matches.subcommand_matches("start") {
-        start::start(&cfg, matches);
-    } else {
-        app.print_long_help().unwrap();
-        println!();
+    match cli_args.command {
+        Command::Start(args) => start::start(&cfg, args),
+        Command::Create(args) => create::create(&mut cfg, args),
+        Command::List(args) => list::list(&cfg, args),
+        Command::Delete(args) => delete::delete(&mut cfg, args),
+        Command::ChangeVm(args) => changevm::changevm(&mut cfg, args),
+        Command::Config(args) => config::config(&mut cfg, args),
     }
 }

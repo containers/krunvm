@@ -1,20 +1,59 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::Args;
 use std::fs;
 use std::io::Write;
 #[cfg(target_os = "macos")]
 use std::path::Path;
 use std::process::Command;
 
-use super::utils::{
-    get_buildah_args, mount_container, parse_mapped_ports, parse_mapped_volumes, umount_container,
-    BuildahCommand,
-};
-use crate::{ArgMatches, KrunvmConfig, VmConfig, APP_NAME};
+use super::utils::{get_buildah_args, mount_container, umount_container, BuildahCommand};
+use crate::utils::{path_pairs_to_hash_map, port_pairs_to_hash_map, PathPair, PortPair};
+use crate::{KrunvmConfig, VmConfig, APP_NAME};
 
 #[cfg(target_os = "macos")]
 const KRUNVM_ROSETTA_FILE: &str = ".krunvm-rosetta";
+
+/// Create a new microVM
+#[derive(Args, Debug)]
+pub struct CreateCmdArgs {
+    /// OCI image to use as template
+    image: String,
+
+    /// Assign a name to the VM
+    #[arg(long)]
+    name: Option<String>,
+
+    /// Number of vCPUs
+    #[arg(long)]
+    cpus: Option<u32>,
+
+    /// Amount of RAM in MiB
+    #[arg(long)]
+    mem: Option<u32>,
+
+    /// DNS server to use in the microVM
+    #[arg(long)]
+    dns: Option<String>,
+
+    /// Working directory inside the microVM
+    #[arg(short, long, default_value = "")]
+    workdir: String,
+
+    /// Volume(s) in form "host_path:guest_path" to be exposed to the guest
+    #[arg(short, long = "volume")]
+    volumes: Vec<PathPair>,
+
+    /// Port(s) in format "host_port:guest_port" to be exposed to the host
+    #[arg(long = "port")]
+    ports: Vec<PortPair>,
+
+    /// Create a x86_64 microVM even on an Aarch64 host
+    #[arg(short, long)]
+    #[cfg(target_os = "macos")]
+    x86: bool,
+}
 
 fn fix_resolv_conf(rootfs: &str, dns: &str) -> Result<(), std::io::Error> {
     let resolvconf_dir = format!("{}/etc/", rootfs);
@@ -66,63 +105,28 @@ fn export_container_config(
     Ok(())
 }
 
-pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
+pub fn create(cfg: &mut KrunvmConfig, args: CreateCmdArgs) {
     #[allow(unused_mut)]
-    let mut cpus = match matches.value_of("cpus") {
-        Some(c) => match c.parse::<u32>() {
-            Err(_) => {
-                println!("Invalid value for \"cpus\"");
-                std::process::exit(-1);
-            }
-            Ok(cpus) => cpus,
-        },
-        None => cfg.default_cpus,
-    };
-    let mem = match matches.value_of("mem") {
-        Some(m) => match m.parse::<u32>() {
-            Err(_) => {
-                println!("Invalid value for \"mem\"");
-                std::process::exit(-1);
-            }
-            Ok(mem) => mem,
-        },
-        None => cfg.default_mem,
-    };
-    let dns = match matches.value_of("dns") {
-        Some(d) => d,
-        None => &cfg.default_dns,
-    };
+    let mut cpus = args.cpus.unwrap_or(cfg.default_cpus);
+    let mem = args.mem.unwrap_or(cfg.default_mem);
+    let dns = args.dns.unwrap_or_else(|| cfg.default_dns.clone());
+    let workdir = args.workdir;
+    let mapped_volumes = path_pairs_to_hash_map(args.volumes);
+    let mapped_ports = port_pairs_to_hash_map(args.ports);
+    let image = args.image;
+    let name = args.name;
 
-    let workdir = matches.value_of("workdir").unwrap();
-
-    let volume_matches = if matches.is_present("volume") {
-        matches.values_of("volume").unwrap().collect()
-    } else {
-        vec![]
-    };
-    let mapped_volumes = parse_mapped_volumes(volume_matches);
-
-    let port_matches = if matches.is_present("port") {
-        matches.values_of("port").unwrap().collect()
-    } else {
-        vec![]
-    };
-    let mapped_ports = parse_mapped_ports(port_matches);
-
-    let image = matches.value_of("IMAGE").unwrap();
-
-    let name = matches.value_of("name");
-    if let Some(name) = name {
+    if let Some(ref name) = name {
         if cfg.vmconfig_map.contains_key(name) {
             println!("A VM with this name already exists");
             std::process::exit(-1);
         }
     }
 
-    let mut args = get_buildah_args(cfg, BuildahCommand::From);
+    let mut buildah_args = get_buildah_args(cfg, BuildahCommand::From);
 
     #[cfg(target_os = "macos")]
-    let force_x86 = matches.is_present("x86");
+    let force_x86 = args.x86;
 
     #[cfg(target_os = "macos")]
     if force_x86 {
@@ -157,14 +161,14 @@ https://threedots.ovh/blog/2022/06/quick-look-at-rosetta-on-linux/
             println!("x86 microVMs on Aarch64 are restricted to 1 CPU");
             cpus = 1;
         }
-        args.push("--arch".to_string());
-        args.push("x86_64".to_string());
+        buildah_args.push("--arch".to_string());
+        buildah_args.push("x86_64".to_string());
     }
 
-    args.push(image.to_string());
+    buildah_args.push(image.to_string());
 
     let output = match Command::new("buildah")
-        .args(&args)
+        .args(&buildah_args)
         .stderr(std::process::Stdio::inherit())
         .output()
     {
@@ -206,8 +210,8 @@ https://threedots.ovh/blog/2022/06/quick-look-at-rosetta-on-linux/
     };
 
     let rootfs = mount_container(cfg, &vmcfg).unwrap();
-    export_container_config(cfg, &rootfs, image).unwrap();
-    fix_resolv_conf(&rootfs, dns).unwrap();
+    export_container_config(cfg, &rootfs, &image).unwrap();
+    fix_resolv_conf(&rootfs, &dns).unwrap();
     #[cfg(target_os = "macos")]
     if force_x86 {
         _ = fs::create_dir(format!("{}/.rosetta", rootfs));

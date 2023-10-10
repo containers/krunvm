@@ -1,6 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::Args;
 use libc::c_char;
 use std::ffi::CString;
 use std::fs::File;
@@ -12,7 +13,28 @@ use std::path::Path;
 
 use super::bindings;
 use super::utils::{mount_container, umount_container};
-use crate::{ArgMatches, KrunvmConfig, VmConfig};
+use crate::{KrunvmConfig, VmConfig};
+
+#[derive(Args, Debug)]
+/// Start an existing microVM
+pub struct StartCmdArgs {
+    /// Name of the microVM
+    name: String,
+
+    /// Command to run inside the VM
+    command: Option<String>,
+
+    /// Arguments to be passed to the command executed in the VM
+    args: Vec<String>,
+
+    /// Number of vCPUs
+    #[arg(long)]
+    cpus: Option<u8>, // TODO: implement or remove this
+
+    /// Amount of RAM in MiB
+    #[arg(long)]
+    mem: Option<usize>, // TODO: implement or remove this
+}
 
 #[cfg(target_os = "linux")]
 fn map_volumes(_ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
@@ -97,6 +119,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
         ps.push(port.as_ptr());
     }
     ps.push(std::ptr::null());
+
     let ret = bindings::krun_set_port_map(ctx, ps.as_ptr());
     if ret < 0 {
         println!("Error setting VM port map");
@@ -175,13 +198,10 @@ fn set_lock(rootfs: &str) -> File {
     file
 }
 
-pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
-    let cmd = matches.value_of("COMMAND");
-    let name = matches.value_of("NAME").unwrap();
-
-    let vmcfg = match cfg.vmconfig_map.get(name) {
+pub fn start(cfg: &KrunvmConfig, args: StartCmdArgs) {
+    let vmcfg = match cfg.vmconfig_map.get(&args.name) {
         None => {
-            println!("No VM found with name {}", name);
+            println!("No VM found with name {}", args.name);
             std::process::exit(-1);
         }
         Some(vmcfg) => vmcfg,
@@ -190,11 +210,11 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
     umount_container(cfg, vmcfg).expect("Error unmounting container");
     let rootfs = mount_container(cfg, vmcfg).expect("Error mounting container");
 
-    let args: Vec<CString> = if cmd.is_some() {
-        match matches.values_of("ARGS") {
-            Some(a) => a.map(|val| CString::new(val).unwrap()).collect(),
-            None => Vec::new(),
-        }
+    let vm_args: Vec<CString> = if args.command.is_some() {
+        args.args
+            .into_iter()
+            .map(|val| CString::new(val).unwrap())
+            .collect()
     } else {
         Vec::new()
     };
@@ -203,7 +223,7 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
 
     let _file = set_lock(&rootfs);
 
-    unsafe { exec_vm(vmcfg, &rootfs, cmd, args) };
+    unsafe { exec_vm(vmcfg, &rootfs, args.command.as_deref(), vm_args) };
 
     umount_container(cfg, vmcfg).expect("Error unmounting container");
 }

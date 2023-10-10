@@ -1,14 +1,20 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ArgMatches, KrunvmConfig, APP_NAME};
+use crate::{KrunvmConfig, APP_NAME};
+use clap::Args;
 
 use super::utils::{remove_container, umount_container};
 
-pub fn delete(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
-    let name = matches.value_of("NAME").unwrap();
+/// Delete an existing microVM
+#[derive(Args, Debug)]
+pub struct DeleteCmdArgs {
+    /// Name of the microVM to be deleted
+    name: String,
+}
 
-    let vmcfg = match cfg.vmconfig_map.remove(name) {
+pub fn delete(cfg: &mut KrunvmConfig, args: DeleteCmdArgs) {
+    let vmcfg = match cfg.vmconfig_map.remove(&args.name) {
         None => {
             println!("No VM found with that name");
             std::process::exit(-1);
