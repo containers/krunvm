@@ -8,22 +8,24 @@ use super::utils::{remove_container, umount_container};
 
 /// Delete an existing microVM
 #[derive(Args, Debug)]
-pub struct DeleteCmdArgs {
+pub struct DeleteCmd {
     /// Name of the microVM to be deleted
     name: String,
 }
 
-pub fn delete(cfg: &mut KrunvmConfig, args: DeleteCmdArgs) {
-    let vmcfg = match cfg.vmconfig_map.remove(&args.name) {
-        None => {
-            println!("No VM found with that name");
-            std::process::exit(-1);
-        }
-        Some(vmcfg) => vmcfg,
-    };
+impl DeleteCmd {
+    pub fn run(self, cfg: &mut KrunvmConfig) {
+        let vmcfg = match cfg.vmconfig_map.remove(&self.name) {
+            None => {
+                println!("No VM found with that name");
+                std::process::exit(-1);
+            }
+            Some(vmcfg) => vmcfg,
+        };
 
-    umount_container(cfg, &vmcfg).unwrap();
-    remove_container(cfg, &vmcfg).unwrap();
+        umount_container(cfg, &vmcfg).unwrap();
+        remove_container(cfg, &vmcfg).unwrap();
 
-    confy::store(APP_NAME, &cfg).unwrap();
+        confy::store(APP_NAME, &cfg).unwrap();
+    }
 }

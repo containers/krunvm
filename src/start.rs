@@ -17,7 +17,7 @@ use crate::{KrunvmConfig, VmConfig};
 
 #[derive(Args, Debug)]
 /// Start an existing microVM
-pub struct StartCmdArgs {
+pub struct StartCmd {
     /// Name of the microVM
     name: String,
 
@@ -34,6 +34,38 @@ pub struct StartCmdArgs {
     /// Amount of RAM in MiB
     #[arg(long)]
     mem: Option<usize>, // TODO: implement or remove this
+}
+
+impl StartCmd {
+    pub fn run(self, cfg: &KrunvmConfig) {
+        let vmcfg = match cfg.vmconfig_map.get(&self.name) {
+            None => {
+                println!("No VM found with name {}", self.name);
+                std::process::exit(-1);
+            }
+            Some(vmcfg) => vmcfg,
+        };
+
+        umount_container(cfg, vmcfg).expect("Error unmounting container");
+        let rootfs = mount_container(cfg, vmcfg).expect("Error mounting container");
+
+        let vm_args: Vec<CString> = if self.command.is_some() {
+            self.args
+                .into_iter()
+                .map(|val| CString::new(val).unwrap())
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        set_rlimits();
+
+        let _file = set_lock(&rootfs);
+
+        unsafe { exec_vm(vmcfg, &rootfs, self.command.as_deref(), vm_args) };
+
+        umount_container(cfg, vmcfg).expect("Error unmounting container");
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -196,34 +228,4 @@ fn set_lock(rootfs: &str) -> File {
     }
 
     file
-}
-
-pub fn start(cfg: &KrunvmConfig, args: StartCmdArgs) {
-    let vmcfg = match cfg.vmconfig_map.get(&args.name) {
-        None => {
-            println!("No VM found with name {}", args.name);
-            std::process::exit(-1);
-        }
-        Some(vmcfg) => vmcfg,
-    };
-
-    umount_container(cfg, vmcfg).expect("Error unmounting container");
-    let rootfs = mount_container(cfg, vmcfg).expect("Error mounting container");
-
-    let vm_args: Vec<CString> = if args.command.is_some() {
-        args.args
-            .into_iter()
-            .map(|val| CString::new(val).unwrap())
-            .collect()
-    } else {
-        Vec::new()
-    };
-
-    set_rlimits();
-
-    let _file = set_lock(&rootfs);
-
-    unsafe { exec_vm(vmcfg, &rootfs, args.command.as_deref(), vm_args) };
-
-    umount_container(cfg, vmcfg).expect("Error unmounting container");
 }

@@ -6,10 +6,24 @@ use clap::Args;
 
 /// List microVMs
 #[derive(Args, Debug)]
-pub struct ListCmdArgs {
+pub struct ListCmd {
     /// Print debug information verbosely
     #[arg(short)]
-    debug: bool, //TODO: implement or remove this
+    pub debug: bool, //TODO: implement or remove this
+}
+
+impl ListCmd {
+    pub fn run(self, cfg: &KrunvmConfig) {
+        if cfg.vmconfig_map.is_empty() {
+            println!("No microVMs found");
+        } else {
+            for (_name, vm) in cfg.vmconfig_map.iter() {
+                println!();
+                printvm(vm);
+            }
+            println!();
+        }
+    }
 }
 
 pub fn printvm(vm: &VmConfig) {
@@ -21,16 +35,4 @@ pub fn printvm(vm: &VmConfig) {
     println!(" Workdir: {}", vm.workdir);
     println!(" Mapped volumes: {:?}", vm.mapped_volumes);
     println!(" Mapped ports: {:?}", vm.mapped_ports);
-}
-
-pub fn list(cfg: &KrunvmConfig, _args: ListCmdArgs) {
-    if cfg.vmconfig_map.is_empty() {
-        println!("No microVMs found");
-    } else {
-        for (_name, vm) in cfg.vmconfig_map.iter() {
-            println!();
-            printvm(vm);
-        }
-        println!();
-    }
 }

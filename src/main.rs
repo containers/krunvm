@@ -7,12 +7,12 @@ use std::fs::File;
 #[cfg(target_os = "macos")]
 use std::io::{self, Read, Write};
 
-use crate::changevm::ChangeVmCmdArgs;
-use crate::config::ConfigCmdArgs;
-use crate::create::CreateCmdArgs;
-use crate::delete::DeleteCmdArgs;
-use crate::list::ListCmdArgs;
-use crate::start::StartCmdArgs;
+use crate::changevm::ChangeVmCmd;
+use crate::config::ConfigCmd;
+use crate::create::CreateCmd;
+use crate::delete::DeleteCmd;
+use crate::list::ListCmd;
+use crate::start::StartCmd;
 use clap::{Parser, Subcommand};
 use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
@@ -166,13 +166,13 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    Start(StartCmdArgs),
-    Create(CreateCmdArgs),
-    List(ListCmdArgs),
-    Delete(DeleteCmdArgs),
+    Start(StartCmd),
+    Create(CreateCmd),
+    List(ListCmd),
+    Delete(DeleteCmd),
     #[command(name = "changevm")]
-    ChangeVm(ChangeVmCmdArgs),
-    Config(ConfigCmdArgs),
+    ChangeVm(ChangeVmCmd),
+    Config(ConfigCmd),
 }
 
 fn main() {
@@ -185,11 +185,11 @@ fn main() {
     check_unshare();
 
     match cli_args.command {
-        Command::Start(args) => start::start(&cfg, args),
-        Command::Create(args) => create::create(&mut cfg, args),
-        Command::List(args) => list::list(&cfg, args),
-        Command::Delete(args) => delete::delete(&mut cfg, args),
-        Command::ChangeVm(args) => changevm::changevm(&mut cfg, args),
-        Command::Config(args) => config::config(&mut cfg, args),
+        Command::Start(cmd) => cmd.run(&cfg),
+        Command::Create(cmd) => cmd.run(&mut cfg),
+        Command::List(cmd) => cmd.run(&cfg),
+        Command::Delete(cmd) => cmd.run(&mut cfg),
+        Command::ChangeVm(cmd) => cmd.run(&mut cfg),
+        Command::Config(cmd) => cmd.run(&mut cfg),
     }
 }
