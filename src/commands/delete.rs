@@ -4,7 +4,7 @@
 use crate::{KrunvmConfig, APP_NAME};
 use clap::Args;
 
-use super::utils::{remove_container, umount_container};
+use crate::utils::{remove_container, umount_container};
 
 /// Delete an existing microVM
 #[derive(Args, Debug)]

@@ -8,8 +8,10 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-use super::utils::{get_buildah_args, mount_container, umount_container, BuildahCommand};
-use crate::utils::{path_pairs_to_hash_map, port_pairs_to_hash_map, PathPair, PortPair};
+use crate::utils::{
+    get_buildah_args, mount_container, path_pairs_to_hash_map, port_pairs_to_hash_map,
+    umount_container, BuildahCommand, PathPair, PortPair,
+};
 use crate::{KrunvmConfig, VmConfig, APP_NAME};
 
 #[cfg(target_os = "macos")]

@@ -11,8 +11,8 @@ use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "macos")]
 use std::path::Path;
 
-use super::bindings;
-use super::utils::{mount_container, umount_container};
+use crate::bindings;
+use crate::utils::{mount_container, umount_container};
 use crate::{KrunvmConfig, VmConfig};
 
 #[derive(Args, Debug)]

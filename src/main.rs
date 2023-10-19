@@ -7,24 +7,15 @@ use std::fs::File;
 #[cfg(target_os = "macos")]
 use std::io::{self, Read, Write};
 
-use crate::changevm::ChangeVmCmd;
-use crate::config::ConfigCmd;
-use crate::create::CreateCmd;
-use crate::delete::DeleteCmd;
-use crate::list::ListCmd;
-use crate::start::StartCmd;
+use crate::commands::{ChangeVmCmd, ConfigCmd, CreateCmd, DeleteCmd, ListCmd, StartCmd};
 use clap::{Parser, Subcommand};
 use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
 use text_io::read;
+
 #[allow(unused)]
 mod bindings;
-mod changevm;
-mod config;
-mod create;
-mod delete;
-mod list;
-mod start;
+mod commands;
 mod utils;
 
 const APP_NAME: &str = "krunvm";
