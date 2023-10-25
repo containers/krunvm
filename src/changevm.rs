@@ -13,7 +13,7 @@ pub fn changevm(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
 
     let name = matches.value_of("NAME").unwrap();
 
-    let mut vmcfg = if let Some(new_name) = matches.value_of("new-name") {
+    let vmcfg = if let Some(new_name) = matches.value_of("new-name") {
         if cfg.vmconfig_map.contains_key(new_name) {
             println!("A VM with name {} already exists", new_name);
             std::process::exit(-1);
