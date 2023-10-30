@@ -130,15 +130,15 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
         let ret = bindings::krun_set_exec(
             ctx,
             c_cmd.as_ptr() as *const i8,
-            argv.as_ptr() as *const *const i8,
-            env.as_ptr() as *const *const i8,
+            argv.as_ptr(),
+            env.as_ptr(),
         );
         if ret < 0 {
             println!("Error setting VM config");
             std::process::exit(-1);
         }
     } else {
-        let ret = bindings::krun_set_env(ctx, env.as_ptr() as *const *const i8);
+        let ret = bindings::krun_set_env(ctx, env.as_ptr());
         if ret < 0 {
             println!("Error setting VM environment variables");
             std::process::exit(-1);
