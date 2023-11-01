@@ -186,7 +186,7 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
         Some(vmcfg) => vmcfg,
     };
 
-    umount_container(cfg, vmcfg).expect("Error unmounting container");
+    umount_container(cfg, vmcfg, false).expect("Error unmounting container");
     let rootfs = mount_container(cfg, vmcfg).expect("Error mounting container");
 
     let args: Vec<CString> = if cmd.is_some() {
@@ -204,5 +204,5 @@ pub fn start(cfg: &KrunvmConfig, matches: &ArgMatches) {
 
     unsafe { exec_vm(vmcfg, &rootfs, cmd, args) };
 
-    umount_container(cfg, vmcfg).expect("Error unmounting container");
+    umount_container(cfg, vmcfg, false).expect("Error unmounting container");
 }
