@@ -198,7 +198,7 @@ pub fn mount_container(cfg: &KrunvmConfig, vmcfg: &VmConfig) -> Result<String, s
     let rootfs = std::str::from_utf8(&output.stdout).unwrap().trim();
 
     #[cfg(target_os = "macos")]
-    fix_root_mode(&rootfs);
+    fix_root_mode(rootfs);
 
     Ok(rootfs.to_string())
 }
