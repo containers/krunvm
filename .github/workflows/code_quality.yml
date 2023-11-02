@@ -26,8 +26,17 @@ jobs:
       - name: Install asciidoctor
         run: sudo apt-get install -y asciidoctor
 
+      - name: Install additional Rust rust targets
+        run: rustup target add aarch64-unknown-linux-gnu aarch64-apple-darwin
+
       - name: Formatting (rustfmt)
         run: cargo fmt -- --check
 
-      - name: Clippy (all features)
-        run: cargo clippy --all-targets --all-features
+      - name: Clippy x86_64-unknown-linux-gnu (all features)
+        run: cargo clippy --all-features --target x86_64-unknown-linux-gnu 
+
+      - name: Clippy aarch64-unknown-linux-gnu (all features)
+        run: cargo clippy --all-features --target aarch64-unknown-linux-gnu 
+
+      - name: Clippy aarch64-apple-darwin (all features)
+        run: cargo clippy --all-features --target aarch64-apple-darwin 
