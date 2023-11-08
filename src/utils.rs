@@ -1,12 +1,13 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::APP_NAME;
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::str::FromStr;
 
-use crate::{KrunvmConfig, VmConfig, APP_NAME};
+use crate::config::{KrunvmConfig, VmConfig};
 
 pub enum BuildahCommand {
     From,

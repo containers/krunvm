@@ -29,10 +29,15 @@ microVM and exposing ports from the guest to the host (and the
 networks connected to it).
 
 Networking to the guest running in the microVM is provided by
-libkrun's TSI (Transparent Socket Impersonation), enabling a seamless
-experience that doesn't require network bridges nor other explicit
-network configuration.
+either libkrun's TSI (Transparent Socket Impersonation) or PASST.
 
+TSI enables a seamless experience that doesn't require network bridges nor other explicit
+network configuration. It only supports impersonating AF_INET SOCK_DGRAM and SOCK_STREAM sockets.
+This implies it's not possible to communicate outside the VM with raw sockets.
+
+PASST uses virtio-net guest device and sends all traffic to a passt subprocess.
+Support of network protocols is therefore dependent on what passt supports.
+Note that currently you need to run a DHCP client in the guest to get an IP address.
 
 GLOBAL OPTIONS
 --------------

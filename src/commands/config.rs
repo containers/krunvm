@@ -1,7 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{KrunvmConfig, APP_NAME};
+use crate::config::{KrunvmConfig, NetworkMode};
 use clap::Args;
 
 /// Configure global values
@@ -18,6 +18,10 @@ pub struct ConfigCmd {
     /// DNS server to use in the microVM
     #[arg(long)]
     dns: Option<String>,
+
+    /// Default network connection mode to use
+    #[arg(long)]
+    net: Option<NetworkMode>,
 }
 
 impl ConfigCmd {
@@ -47,11 +51,18 @@ impl ConfigCmd {
             cfg_changed = true;
         }
 
-        if cfg_changed {
-            confy::store(APP_NAME, &cfg).unwrap();
+        if let Some(network_mode) = self.net {
+            if network_mode != cfg.default_network_mode {
+                cfg.default_network_mode = network_mode;
+                cfg_changed = true;
+            }
         }
 
-        println!("Global configuration:");
+        if cfg_changed {
+            crate::config::save(cfg).unwrap();
+        }
+
+        println!("Global config:");
         println!(
             "Default number of CPUs for newly created VMs: {}",
             cfg.default_cpus
