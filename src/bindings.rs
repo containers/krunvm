@@ -1,7 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use libc::c_char;
+use libc::{c_char, c_int};
 
 #[link(name = "krun")]
 extern "C" {
