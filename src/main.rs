@@ -1,59 +1,25 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashMap;
 #[cfg(target_os = "macos")]
 use std::fs::File;
 #[cfg(target_os = "macos")]
 use std::io::{self, Read, Write};
 
 use crate::commands::{ChangeVmCmd, ConfigCmd, CreateCmd, DeleteCmd, ListCmd, StartCmd};
+#[cfg(target_os = "macos")]
+use crate::config::KrunvmConfig;
 use clap::{Parser, Subcommand};
-use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
 use text_io::read;
 
 #[allow(unused)]
 mod bindings;
 mod commands;
+mod config;
 mod utils;
 
 const APP_NAME: &str = "krunvm";
-
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct VmConfig {
-    name: String,
-    cpus: u32,
-    mem: u32,
-    container: String,
-    workdir: String,
-    dns: String,
-    mapped_volumes: HashMap<String, String>,
-    mapped_ports: HashMap<String, String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KrunvmConfig {
-    version: u8,
-    default_cpus: u32,
-    default_mem: u32,
-    default_dns: String,
-    storage_volume: String,
-    vmconfig_map: HashMap<String, VmConfig>,
-}
-
-impl Default for KrunvmConfig {
-    fn default() -> KrunvmConfig {
-        KrunvmConfig {
-            version: 1,
-            default_cpus: 2,
-            default_mem: 1024,
-            default_dns: "1.1.1.1".to_string(),
-            storage_volume: String::new(),
-            vmconfig_map: HashMap::new(),
-        }
-    }
-}
 
 #[cfg(target_os = "macos")]
 fn check_case_sensitivity(volume: &str) -> Result<bool, io::Error> {
@@ -167,7 +133,7 @@ enum Command {
 }
 
 fn main() {
-    let mut cfg: KrunvmConfig = confy::load(APP_NAME).unwrap();
+    let mut cfg = config::load().unwrap();
     let cli_args = Cli::parse();
 
     #[cfg(target_os = "macos")]

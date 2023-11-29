@@ -1,7 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{KrunvmConfig, VmConfig};
+use crate::config::{KrunvmConfig, VmConfig};
 use clap::Args;
 
 /// List microVMs
@@ -33,6 +33,7 @@ pub fn printvm(vm: &VmConfig) {
     println!(" DNS server: {}", vm.dns);
     println!(" Buildah container: {}", vm.container);
     println!(" Workdir: {}", vm.workdir);
+    println!(" Network mode: {:?}", vm.network_mode);
     println!(" Mapped volumes: {:?}", vm.mapped_volumes);
     println!(" Mapped ports: {:?}", vm.mapped_ports);
 }

@@ -53,6 +53,8 @@ host visible in the guest.
 An empty string ("") tells krunvm to not set a working directory
 explicitly, letting libkrun decide which one should be set.  
 
+*--net* _NETWORK_MODE_::
+  Set the network connection mode. Supported modes are either PASST or TSI.
 
 SEE ALSO
 --------

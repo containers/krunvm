@@ -34,6 +34,9 @@ OPTIONS
   Sets the default mount of RAM, in MiB, that will be configured for
   newly created microVMs.
 
+*--net* _NETWORK_MODE_::
+  Sets the default network connection mode, that will be configured for
+  newly created microVMs. Supported modes are PASST or TSI.
 
 SEE ALSO
 --------

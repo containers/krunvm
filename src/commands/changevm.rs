@@ -4,8 +4,8 @@
 use clap::Args;
 use std::collections::HashMap;
 
+use crate::config::{KrunvmConfig, NetworkMode};
 use crate::utils::{path_pairs_to_hash_map, port_pairs_to_hash_map, PathPair, PortPair};
-use crate::{KrunvmConfig, APP_NAME};
 
 use super::list::printvm;
 
@@ -46,6 +46,10 @@ pub struct ChangeVmCmd {
     /// Port(s) in format "host_port:guest_port" to be exposed to the host
     #[arg(long = "port")]
     ports: Vec<PortPair>,
+
+    /// Set the network connection mode for the microVM
+    #[arg(long)]
+    net: Option<NetworkMode>,
 }
 
 impl ChangeVmCmd {
@@ -130,12 +134,17 @@ impl ChangeVmCmd {
             cfg_changed = true;
         }
 
+        if let Some(network_mode) = self.net {
+            vmcfg.network_mode = network_mode;
+            cfg_changed = true;
+        }
+
         println!();
         printvm(vmcfg);
         println!();
 
         if cfg_changed {
-            confy::store(APP_NAME, &cfg).unwrap();
+            crate::config::save(cfg).unwrap();
         }
     }
 }

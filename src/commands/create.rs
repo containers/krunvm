@@ -1,6 +1,8 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::{KrunvmConfig, NetworkMode, VmConfig};
+use crate::APP_NAME;
 use clap::Args;
 use std::fs;
 use std::io::Write;
@@ -12,8 +14,6 @@ use crate::utils::{
     get_buildah_args, mount_container, path_pairs_to_hash_map, port_pairs_to_hash_map,
     umount_container, BuildahCommand, PathPair, PortPair,
 };
-use crate::{KrunvmConfig, VmConfig, APP_NAME};
-
 #[cfg(target_os = "macos")]
 const KRUNVM_ROSETTA_FILE: &str = ".krunvm-rosetta";
 
@@ -51,6 +51,10 @@ pub struct CreateCmd {
     #[arg(long = "port")]
     ports: Vec<PortPair>,
 
+    /// Network connection mode to use
+    #[arg(long)]
+    net: Option<NetworkMode>,
+
     /// Create a x86_64 microVM even on an Aarch64 host
     #[arg(short, long)]
     #[cfg(target_os = "macos")]
@@ -68,6 +72,7 @@ impl CreateCmd {
         let mapped_ports = port_pairs_to_hash_map(self.ports);
         let image = self.image;
         let name = self.name;
+        let network_mode = self.net.unwrap_or_else(|| cfg.default_network_mode.clone());
 
         if let Some(ref name) = name {
             if cfg.vmconfig_map.contains_key(name) {
@@ -160,6 +165,7 @@ https://threedots.ovh/blog/2022/06/quick-look-at-rosetta-on-linux/
             workdir: workdir.to_string(),
             mapped_volumes,
             mapped_ports,
+            network_mode,
         };
 
         let rootfs = mount_container(cfg, &vmcfg).unwrap();
