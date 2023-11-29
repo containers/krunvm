@@ -1,6 +1,7 @@
 // Copyright 2021 Red Hat, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use libc::c_char;
 use std::ffi::CString;
 use std::fs::File;
 #[cfg(target_os = "linux")]
@@ -91,7 +92,7 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
         let map = format!("{}:{}", host_port, guest_port);
         ports.push(CString::new(map).unwrap());
     }
-    let mut ps: Vec<*const i8> = Vec::new();
+    let mut ps: Vec<*const c_char> = Vec::new();
     for port in ports.iter() {
         ps.push(port.as_ptr());
     }
@@ -113,10 +114,10 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
 
     let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
     let home = CString::new("HOME=/root").unwrap();
-    let env: [*const i8; 3] = [hostname.as_ptr(), home.as_ptr(), std::ptr::null()];
+    let env: [*const c_char; 3] = [hostname.as_ptr(), home.as_ptr(), std::ptr::null()];
 
     if let Some(cmd) = cmd {
-        let mut argv: Vec<*const i8> = Vec::new();
+        let mut argv: Vec<*const c_char> = Vec::new();
         for a in args.iter() {
             argv.push(a.as_ptr());
         }

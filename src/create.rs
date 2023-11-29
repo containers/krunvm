@@ -67,7 +67,8 @@ fn export_container_config(
 }
 
 pub fn create(cfg: &mut KrunvmConfig, matches: &ArgMatches) {
-    let cpus = match matches.value_of("cpus") {
+    #[allow(unused_mut)]
+    let mut cpus = match matches.value_of("cpus") {
         Some(c) => match c.parse::<u32>() {
             Err(_) => {
                 println!("Invalid value for \"cpus\"");
