@@ -34,6 +34,10 @@ pub struct StartCmd {
     /// Amount of RAM in MiB
     #[arg(long)]
     mem: Option<usize>, // TODO: implement or remove this
+
+    /// env(s) in format "key=value" to be exposed to the VM
+    #[arg(long = "env")]
+    envs: Option<Vec<String>>,
 }
 
 impl StartCmd {
@@ -58,11 +62,21 @@ impl StartCmd {
             Vec::new()
         };
 
+        let env_pairs: Vec<CString> = if self.envs.is_some() {
+            self.envs
+                .unwrap()
+                .into_iter()
+                .map(|val| CString::new(val).unwrap())
+                .collect()
+        } else {
+            Vec::new()
+        };
+
         set_rlimits();
 
         let _file = set_lock(&rootfs);
 
-        unsafe { exec_vm(vmcfg, &rootfs, self.command.as_deref(), vm_args) };
+        unsafe { exec_vm(vmcfg, &rootfs, self.command.as_deref(), vm_args, env_pairs) };
 
         umount_container(cfg, vmcfg).expect("Error unmounting container");
     }
@@ -121,7 +135,13 @@ fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
     }
 }
 
-unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<CString>) {
+unsafe fn exec_vm(
+    vmcfg: &VmConfig,
+    rootfs: &str,
+    cmd: Option<&str>,
+    args: Vec<CString>,
+    env_pairs: Vec<CString>,
+) {
     //bindings::krun_set_log_level(9);
 
     let ctx = bindings::krun_create_ctx() as u32;
@@ -169,7 +189,14 @@ unsafe fn exec_vm(vmcfg: &VmConfig, rootfs: &str, cmd: Option<&str>, args: Vec<C
 
     let hostname = CString::new(format!("HOSTNAME={}", vmcfg.name)).unwrap();
     let home = CString::new("HOME=/root").unwrap();
-    let env: [*const c_char; 3] = [hostname.as_ptr(), home.as_ptr(), std::ptr::null()];
+
+    let mut env: Vec<*const c_char> = Vec::new();
+    env.push(hostname.as_ptr());
+    env.push(home.as_ptr());
+    for a in env_pairs.iter() {
+        env.push(a.as_ptr());
+    }
+    env.push(std::ptr::null());
 
     if let Some(cmd) = cmd {
         let mut argv: Vec<*const c_char> = Vec::new();
