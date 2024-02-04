@@ -193,8 +193,8 @@ unsafe fn exec_vm(
     let mut env: Vec<*const c_char> = Vec::new();
     env.push(hostname.as_ptr());
     env.push(home.as_ptr());
-    for a in env_pairs.iter() {
-        env.push(a.as_ptr());
+    for value in env_pairs.iter() {
+        env.push(value.as_ptr());
     }
     env.push(std::ptr::null());
 
