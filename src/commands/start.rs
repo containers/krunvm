@@ -100,7 +100,7 @@ fn map_volumes(_ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
 fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
     let mut volumes = Vec::new();
     for (host_path, guest_path) in vmcfg.mapped_volumes.iter() {
-        let full_guest = format!("{}{}", &rootfs, guest_path);
+        let full_guest = format!("{rootfs}{guest_path}");
         let full_guest_path = Path::new(&full_guest);
         if !full_guest_path.exists() {
             std::fs::create_dir(full_guest_path)
@@ -218,7 +218,7 @@ fn set_rlimits() {
 }
 
 fn set_lock(rootfs: &str) -> File {
-    let lock_path = format!("{}/.krunvm.lock", rootfs);
+    let lock_path = format!("{rootfs}/.krunvm.lock");
     let file = File::create(lock_path).expect("Couldn't create lock file");
 
     let ret = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
