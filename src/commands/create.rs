@@ -70,6 +70,10 @@ impl CreateCmd {
         let name = self.name;
 
         if let Some(ref name) = name {
+            if name.is_empty() {
+                println!("Invalid name for VM");
+                std::process::exit(-1);
+            }
             if cfg.vmconfig_map.contains_key(name) {
                 println!("A VM with this name already exists");
                 std::process::exit(-1);
