@@ -33,6 +33,8 @@ OPTIONS
 *--mem* _NUM_::
   Override amount of RAM, in MiB, configured for this microVM.
 
+*--env* _KEY=VALUE_::
+  Set environment variable to be passed to the microVM.
 
 SEE ALSO
 --------
