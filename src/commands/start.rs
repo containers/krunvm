@@ -2,18 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Args;
-use libc::c_char;
+use libc::{c_char, c_int};
+use nix::errno::Errno;
+use nix::sys::socket::{socketpair, AddressFamily, SockFlag, SockType};
+use std::collections::HashMap;
 use std::ffi::CString;
+
 use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::io::{Error, ErrorKind};
+
+use std::os::fd::{IntoRawFd, OwnedFd};
 use std::os::unix::io::AsRawFd;
+
 #[cfg(target_os = "macos")]
 use std::path::Path;
+use std::process::Stdio;
+
+use nix::fcntl::{fcntl, FcntlArg, FdFlag};
 
 use crate::bindings;
+use crate::bindings::krun_set_passt_fd;
+use crate::config::{KrunvmConfig, NetworkMode, VmConfig};
 use crate::utils::{mount_container, umount_container};
-use crate::{KrunvmConfig, VmConfig};
 
 #[derive(Args, Debug)]
 /// Start an existing microVM
@@ -38,6 +49,49 @@ pub struct StartCmd {
     /// env(s) in format "key=value" to be exposed to the VM
     #[arg(long = "env")]
     envs: Option<Vec<String>>,
+}
+
+fn start_passt(mapped_ports: &HashMap<String, String>) -> Result<OwnedFd, ()> {
+    let (passt_fd, krun_fd) = socketpair(
+        AddressFamily::Unix,
+        SockType::Stream,
+        None,
+        SockFlag::empty(),
+    )
+    .map_err(|e| {
+        eprint!("Failed to create socket pair for passt: {e}");
+    })?;
+
+    if let Err(e) = fcntl(krun_fd.as_raw_fd(), FcntlArg::F_SETFD(FdFlag::FD_CLOEXEC)) {
+        eprint!("Failed to set FD_CLOEXEC: {e}");
+    }
+
+    let mut cmd = std::process::Command::new("passt");
+    cmd.arg("-q")
+        .arg("-f")
+        .arg("-F")
+        .arg(passt_fd.as_raw_fd().to_string());
+
+    if !mapped_ports.is_empty() {
+        let comma_separated_ports = mapped_ports
+            .iter()
+            .map(|(host_port, guest_port)| format!("{}:{}", host_port, guest_port))
+            .collect::<Vec<String>>()
+            .join(",");
+
+        cmd.arg("-t").arg(comma_separated_ports);
+    }
+
+    cmd.stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .stdin(Stdio::null());
+
+    if let Err(e) = cmd.spawn() {
+        eprintln!("Failed to start passt: {e}");
+        return Err(());
+    }
+
+    Ok(krun_fd)
 }
 
 impl StartCmd {
@@ -172,10 +226,29 @@ unsafe fn exec_vm(
     }
     ps.push(std::ptr::null());
 
-    let ret = bindings::krun_set_port_map(ctx, ps.as_ptr());
-    if ret < 0 {
-        println!("Error setting VM port map");
-        std::process::exit(-1);
+    match vmcfg.network_mode {
+        NetworkMode::Tsi => {
+            let ret = bindings::krun_set_port_map(ctx, ps.as_ptr());
+            if ret < 0 {
+                println!("Error setting VM port map");
+                std::process::exit(-1);
+            }
+        }
+        NetworkMode::Passt => {
+            let Ok(passt_fd) = start_passt(&vmcfg.mapped_ports) else {
+                std::process::exit(-1);
+            };
+            let ret = krun_set_passt_fd(ctx, passt_fd.into_raw_fd() as c_int);
+            if ret < 0 {
+                let errno = Errno::from_i32(-ret);
+                if errno == Errno::ENOTSUP {
+                    println!("Failed to set passt fd: your libkrun build does not support virtio-net/passt mode.");
+                } else {
+                    println!("Failed to set passt fd: {}", errno);
+                }
+                std::process::exit(-1);
+            }
+        }
     }
 
     if !vmcfg.workdir.is_empty() {
