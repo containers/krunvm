@@ -7,7 +7,9 @@ use std::fs::File;
 #[cfg(target_os = "macos")]
 use std::io::{self, Read, Write};
 
-use crate::commands::{ChangeVmCmd, ConfigCmd, CreateCmd, DeleteCmd, ListCmd, StartCmd};
+use crate::commands::{
+    ChangeVmCmd, ConfigCmd, CreateCmd, DeleteCmd, InspectCmd, ListCmd, StartCmd,
+};
 use clap::{Parser, Subcommand};
 use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
@@ -159,6 +161,7 @@ struct Cli {
 enum Command {
     Start(StartCmd),
     Create(CreateCmd),
+    Inspect(InspectCmd),
     List(ListCmd),
     Delete(DeleteCmd),
     #[command(name = "changevm")]
@@ -176,6 +179,7 @@ fn main() {
     check_unshare();
 
     match cli_args.command {
+        Command::Inspect(cmd) => cmd.run(&mut cfg),
         Command::Start(cmd) => cmd.run(&cfg),
         Command::Create(cmd) => cmd.run(&mut cfg),
         Command::List(cmd) => cmd.run(&cfg),
