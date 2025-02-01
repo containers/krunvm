@@ -38,9 +38,9 @@ fn generate_man_page<P: AsRef<Path>>(outdir: P, command: &str) -> io::Result<()>
     }
 
     let outdir = outdir.as_ref();
-    let outfile = outdir.join(format!("{}.1", command));
+    let outfile = outdir.join(format!("{command}.1"));
     let cwd = env::current_dir()?;
-    let txt_path = cwd.join("docs").join(format!("{}.1.txt", command));
+    let txt_path = cwd.join("docs").join(format!("{command}.1.txt"));
 
     let result = process::Command::new("asciidoctor")
         .arg("--doctype")

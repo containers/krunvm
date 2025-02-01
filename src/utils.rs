@@ -33,8 +33,8 @@ pub fn get_buildah_args(cfg: &KrunvmConfig, cmd: BuildahCommand) -> Vec<String> 
     hbpath.pop();
     hbpath.pop();
     let hbpath = hbpath.as_path().display();
-    let policy_json = format!("{}/etc/containers/policy.json", hbpath);
-    let registries_json = format!("{}/etc/containers/registries.conf", hbpath);
+    let policy_json = format!("{hbpath}/etc/containers/policy.json");
+    let registries_json = format!("{hbpath}/etc/containers/registries.conf");
     let storage_root = format!("{}/root", cfg.storage_volume);
     let storage_runroot = format!("{}/runroot", cfg.storage_volume);
 
