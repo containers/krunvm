@@ -112,6 +112,9 @@ fn map_volumes(_ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
 
 #[cfg(target_os = "macos")]
 fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
+    if vmcfg.mapped_volumes.is_empty() {
+        return;
+    }
     let mut volumes = Vec::new();
     for (host_path, guest_path) in vmcfg.mapped_volumes.iter() {
         let full_guest = format!("{}{}", &rootfs, guest_path);
