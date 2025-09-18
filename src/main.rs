@@ -2,15 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashMap;
+use std::env;
+use std::ffi::CString;
 #[cfg(target_os = "macos")]
 use std::fs::File;
 #[cfg(target_os = "macos")]
-use std::io::{self, Read, Write};
+use std::io::{self, Error, ErrorKind, Read, Write};
+use std::os::unix::ffi::OsStringExt;
 
 use crate::commands::{
     ChangeVmCmd, ConfigCmd, CreateCmd, DeleteCmd, InspectCmd, ListCmd, StartCmd,
 };
 use clap::{Parser, Subcommand};
+use nix::unistd::execve;
 use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
 use text_io::read;
@@ -169,7 +173,62 @@ enum Command {
     Config(ConfigCmd),
 }
 
+#[cfg(target_os = "macos")]
+fn get_brew_prefix() -> Option<String> {
+    let output = std::process::Command::new("brew")
+        .arg("--prefix")
+        .stderr(std::process::Stdio::inherit())
+        .output()
+        .ok()?;
+
+    let exit_code = output.status.code().unwrap_or(-1);
+    if exit_code != 0 {
+        return None;
+    }
+
+    Some(std::str::from_utf8(&output.stdout).ok()?.trim().to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn reexec() -> Result<(), Error> {
+    let args: Vec<CString> = env::args_os()
+        .map(|arg| CString::new(arg.into_vec()).unwrap())
+        .collect();
+
+    let mut envs: Vec<CString> = env::vars_os()
+        .map(|(key, value)| {
+            CString::new(format!(
+                "{}={}",
+                key.into_string().unwrap(),
+                value.into_string().unwrap()
+            ))
+            .unwrap()
+        })
+        .collect();
+    let brew_prefix = get_brew_prefix().ok_or(ErrorKind::NotFound)?;
+    envs.push(CString::new(format!(
+        "DYLD_LIBRARY_PATH={brew_prefix}/lib"
+    ))?);
+
+    // Use execve to replace the current process. This function only returns
+    // if an error occurs.
+    match execve(&args[0], &args, &envs) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            eprintln!("Error re-executing krunvm: {}", e);
+            std::process::exit(-1);
+        }
+    }
+}
+
 fn main() {
+    #[cfg(target_os = "macos")]
+    {
+        if env::var("DYLD_LIBRARY_PATH").is_err() {
+            _ = reexec();
+        }
+    }
+
     let mut cfg: KrunvmConfig = confy::load(APP_NAME).unwrap();
     let cli_args = Cli::parse();
 

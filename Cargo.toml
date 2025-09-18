@@ -15,4 +15,4 @@ libc = "0.2.82"
 serde = "1.0.120"
 serde_derive = "1.0.120"
 text_io = "0.1.8"
-nix = {version = "0.27.1", features = ["socket", "fs"]}
+nix = {version = "0.27.1", features = ["socket", "fs", "process"]}
