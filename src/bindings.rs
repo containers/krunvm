@@ -10,7 +10,6 @@ extern "C" {
     pub fn krun_free_ctx(ctx: u32) -> i32;
     pub fn krun_set_vm_config(ctx: u32, num_vcpus: u8, ram_mib: u32) -> i32;
     pub fn krun_set_root(ctx: u32, root_path: *const c_char) -> i32;
-    pub fn krun_set_mapped_volumes(ctx: u32, mapped_volumes: *const *const c_char) -> i32;
     pub fn krun_set_port_map(ctx: u32, port_map: *const *const c_char) -> i32;
     pub fn krun_set_workdir(ctx: u32, workdir_path: *const c_char) -> i32;
     pub fn krun_add_virtiofs(ctx: u32, tag: *const c_char, path: *const c_char) -> i32;
