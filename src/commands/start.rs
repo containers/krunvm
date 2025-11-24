@@ -5,9 +5,15 @@ use clap::Args;
 use libc::c_char;
 use std::ffi::CString;
 use std::fs::File;
+#[cfg(target_os = "macos")]
+use std::fs;
 #[cfg(target_os = "linux")]
 use std::io::{Error, ErrorKind};
+#[cfg(target_os = "macos")]
+use std::io::Write;
 use std::os::unix::io::AsRawFd;
+#[cfg(target_os = "macos")]
+use std::os::unix::fs::PermissionsExt;
 #[cfg(target_os = "macos")]
 use std::path::Path;
 
@@ -111,31 +117,26 @@ fn map_volumes(_ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
 }
 
 #[cfg(target_os = "macos")]
-fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) {
-    if vmcfg.mapped_volumes.is_empty() {
-        return;
-    }
-    let mut volumes = Vec::new();
-    for (host_path, guest_path) in vmcfg.mapped_volumes.iter() {
+fn map_volumes(ctx: u32, vmcfg: &VmConfig, rootfs: &str) -> Vec<(String, String)> {
+    let mut mounts = Vec::new();
+    for (idx, (host_path, guest_path)) in vmcfg.mapped_volumes.iter().enumerate() {
         let full_guest = format!("{}{}", &rootfs, guest_path);
         let full_guest_path = Path::new(&full_guest);
         if !full_guest_path.exists() {
             std::fs::create_dir(full_guest_path)
                 .expect("Couldn't create guest_path for mapped volume");
         }
-        let map = format!("{}:{}", host_path, guest_path);
-        volumes.push(CString::new(map).unwrap());
+        let tag = format!("krunvm{}", idx);
+        let c_tag = CString::new(tag.as_str()).unwrap();
+        let c_host = CString::new(host_path.as_str()).unwrap();
+        let ret = unsafe { bindings::krun_add_virtiofs(ctx, c_tag.as_ptr(), c_host.as_ptr()) };
+        if ret < 0 {
+            println!("Error setting VM mapped volume {}", guest_path);
+            std::process::exit(-1);
+        }
+        mounts.push((tag, guest_path.to_string()));
     }
-    let mut vols: Vec<*const i8> = Vec::new();
-    for vol in volumes.iter() {
-        vols.push(vol.as_ptr());
-    }
-    vols.push(std::ptr::null());
-    let ret = unsafe { bindings::krun_set_mapped_volumes(ctx, vols.as_ptr()) };
-    if ret < 0 {
-        println!("Error setting VM mapped volumes");
-        std::process::exit(-1);
-    }
+    mounts
 }
 
 unsafe fn exec_vm(
@@ -162,7 +163,12 @@ unsafe fn exec_vm(
         std::process::exit(-1);
     }
 
+    #[cfg(target_os = "linux")]
     map_volumes(ctx, vmcfg, rootfs);
+    #[cfg(target_os = "macos")]
+    let virtiofs_mounts = map_volumes(ctx, vmcfg, rootfs);
+    #[cfg(target_os = "macos")]
+    let mount_wrapper = build_mount_wrapper(rootfs, cmd, &args, &virtiofs_mounts);
 
     let mut ports = Vec::new();
     for (host_port, guest_port) in vmcfg.mapped_ports.iter() {
@@ -201,24 +207,60 @@ unsafe fn exec_vm(
     }
     env.push(std::ptr::null());
 
-    if let Some(cmd) = cmd {
-        let mut argv: Vec<*const c_char> = Vec::new();
-        for a in args.iter() {
-            argv.push(a.as_ptr());
-        }
-        argv.push(std::ptr::null());
+    #[cfg(target_os = "macos")]
+    {
+        if let Some((helper_path, helper_args)) = mount_wrapper {
+            let mut argv: Vec<*const c_char> = helper_args.iter().map(|a| a.as_ptr()).collect();
+            argv.push(std::ptr::null());
+            let ret =
+                bindings::krun_set_exec(ctx, helper_path.as_ptr(), argv.as_ptr(), env.as_ptr());
+            if ret < 0 {
+                println!("Error setting VM config");
+                std::process::exit(-1);
+            }
+        } else if let Some(cmd) = cmd {
+            let mut argv: Vec<*const c_char> = Vec::new();
+            for a in args.iter() {
+                argv.push(a.as_ptr());
+            }
+            argv.push(std::ptr::null());
 
-        let c_cmd = CString::new(cmd).unwrap();
-        let ret = bindings::krun_set_exec(ctx, c_cmd.as_ptr(), argv.as_ptr(), env.as_ptr());
-        if ret < 0 {
-            println!("Error setting VM config");
-            std::process::exit(-1);
+            let c_cmd = CString::new(cmd).unwrap();
+            let ret = bindings::krun_set_exec(ctx, c_cmd.as_ptr(), argv.as_ptr(), env.as_ptr());
+            if ret < 0 {
+                println!("Error setting VM config");
+                std::process::exit(-1);
+            }
+        } else {
+            let ret = bindings::krun_set_env(ctx, env.as_ptr());
+            if ret < 0 {
+                println!("Error setting VM environment variables");
+                std::process::exit(-1);
+            }
         }
-    } else {
-        let ret = bindings::krun_set_env(ctx, env.as_ptr());
-        if ret < 0 {
-            println!("Error setting VM environment variables");
-            std::process::exit(-1);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        if let Some(cmd) = cmd {
+            let mut argv: Vec<*const c_char> = Vec::new();
+            for a in args.iter() {
+                argv.push(a.as_ptr());
+            }
+            argv.push(std::ptr::null());
+
+            let c_cmd = CString::new(cmd).unwrap();
+            let ret = bindings::krun_set_exec(ctx, c_cmd.as_ptr(), argv.as_ptr(), env.as_ptr());
+            if ret < 0 {
+                println!("Error setting VM config");
+                std::process::exit(-1);
+            }
+        } else {
+            let ret = bindings::krun_set_env(ctx, env.as_ptr());
+            if ret < 0 {
+                println!("Error setting VM environment variables");
+                std::process::exit(-1);
+            }
         }
     }
 
@@ -227,6 +269,54 @@ unsafe fn exec_vm(
         println!("Error starting VM");
         std::process::exit(-1);
     }
+}
+
+#[cfg(target_os = "macos")]
+fn build_mount_wrapper(
+    rootfs: &str,
+    cmd: Option<&str>,
+    args: &[CString],
+    mounts: &[(String, String)],
+) -> Option<(CString, Vec<CString>)> {
+    if mounts.is_empty() {
+        return None;
+    }
+
+    let helper_path = write_mount_script(rootfs, mounts);
+
+    let mut exec_args: Vec<CString> = Vec::new();
+    let command = cmd.unwrap_or("/bin/sh");
+    exec_args.push(CString::new(command).unwrap());
+    exec_args.extend(args.iter().cloned());
+
+    let helper_cstr = CString::new(helper_path).unwrap();
+    Some((helper_cstr, exec_args))
+}
+
+#[cfg(target_os = "macos")]
+fn write_mount_script(rootfs: &str, mounts: &[(String, String)]) -> String {
+    let host_path = format!("{}/.krunvm-mount.sh", rootfs);
+    let guest_path = "/.krunvm-mount.sh".to_string();
+
+    let mut file = File::create(&host_path).unwrap_or_else(|err| {
+        println!("Error creating mount helper script: {}", err);
+        std::process::exit(-1);
+    });
+
+    writeln!(file, "#!/bin/sh").unwrap();
+    writeln!(file, "set -e").unwrap();
+    for (tag, guest_path) in mounts {
+        writeln!(file, "mount -t virtiofs {} {}", tag, guest_path).unwrap();
+    }
+    writeln!(file, "exec \"$@\"").unwrap();
+
+    let perms = fs::Permissions::from_mode(0o755);
+    if let Err(err) = fs::set_permissions(&host_path, perms) {
+        println!("Error setting mount helper permissions: {}", err);
+        std::process::exit(-1);
+    }
+
+    guest_path
 }
 
 fn set_rlimits() {
