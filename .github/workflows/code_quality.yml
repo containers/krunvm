@@ -1,42 +1,15 @@
-name: Code Quality (rustfmt and clippy)
-on: [pull_request, create]
+name: Code Quality
+on: [pull_request]
 
 jobs:
-  build:
-    if: github.event_name == 'pull_request'
-    name: Code Quality (clippy, rustfmt)
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - stable
-        target:
-          - x86_64-unknown-linux-gnu
+  code-quality-macos:
+    name: krunvm (macOS aarch64)
+    runs-on: macos-latest
     steps:
-      - name: Code checkout
-        uses: actions/checkout@v2
-      - name: Install Rust toolchain (${{ matrix.rust }})
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: ${{ matrix.rust }}
-            target: ${{ matrix.target }}
-            override: true
-            components: rustfmt, clippy
-
-      - name: Install asciidoctor
-        run: sudo apt-get install -y asciidoctor
-
-      - name: Install additional Rust rust targets
-        run: rustup target add aarch64-unknown-linux-gnu aarch64-apple-darwin
-
-      - name: Formatting (rustfmt)
-        run: cargo fmt -- --check
-
-      - name: Clippy x86_64-unknown-linux-gnu (all features)
-        run: cargo clippy --all-features --target x86_64-unknown-linux-gnu 
-
-      - name: Clippy aarch64-unknown-linux-gnu (all features)
-        run: cargo clippy --all-features --target aarch64-unknown-linux-gnu 
-
-      - name: Clippy aarch64-apple-darwin (all features)
-        run: cargo clippy --all-features --target aarch64-apple-darwin 
+      - uses: actions/checkout@v4
+      
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-env
+      
+      - name: Clippy
+        run: cargo clippy --locked -- -D warnings
