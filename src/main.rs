@@ -191,6 +191,9 @@ fn get_brew_prefix() -> Option<String> {
 
 #[cfg(target_os = "macos")]
 fn reexec() -> Result<(), Error> {
+    let exec_path = env::current_exe().map_err(|_| ErrorKind::NotFound)?;
+    let exec_cstr = CString::new(exec_path.to_str().ok_or(ErrorKind::InvalidFilename)?)?;
+
     let args: Vec<CString> = env::args_os()
         .map(|arg| CString::new(arg.into_vec()).unwrap())
         .collect();
@@ -212,7 +215,7 @@ fn reexec() -> Result<(), Error> {
 
     // Use execve to replace the current process. This function only returns
     // if an error occurs.
-    match execve(&args[0], &args, &envs) {
+    match execve(&exec_cstr, &args, &envs) {
         Ok(_) => Ok(()),
         Err(e) => {
             eprintln!("Error re-executing krunvm: {}", e);

@@ -54,7 +54,7 @@ fn generate_man_page<P: AsRef<Path>>(outdir: P, command: &str) -> io::Result<()>
         .wait()?;
     if !result.success() {
         let msg = format!("'asciidoctor' failed with exit code {:?}", result.code());
-        return Err(io::Error::new(io::ErrorKind::Other, msg));
+        return Err(io::Error::other(msg));
     }
     Ok(())
 }
