@@ -2,18 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashMap;
+#[cfg(target_os = "macos")]
 use std::env;
+#[cfg(target_os = "macos")]
 use std::ffi::CString;
 #[cfg(target_os = "macos")]
 use std::fs::File;
 #[cfg(target_os = "macos")]
 use std::io::{self, Error, ErrorKind, Read, Write};
+#[cfg(target_os = "macos")]
 use std::os::unix::ffi::OsStringExt;
 
 use crate::commands::{
     ChangeVmCmd, ConfigCmd, CreateCmd, DeleteCmd, InspectCmd, ListCmd, StartCmd,
 };
 use clap::{Parser, Subcommand};
+#[cfg(target_os = "macos")]
 use nix::unistd::execve;
 use serde_derive::{Deserialize, Serialize};
 #[cfg(target_os = "macos")]
