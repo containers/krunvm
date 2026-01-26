@@ -7,12 +7,12 @@ use std::ffi::CString;
 #[cfg(target_os = "macos")]
 use std::fs;
 use std::fs::File;
+#[cfg(target_os = "macos")]
 use std::io::Write;
 #[cfg(target_os = "linux")]
 use std::io::{Error, ErrorKind};
 #[cfg(target_os = "macos")]
 use std::os::unix::fs::PermissionsExt;
-#[cfg(target_os = "macos")]
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "macos")]
 use std::path::Path;
