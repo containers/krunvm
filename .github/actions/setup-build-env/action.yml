@@ -34,9 +34,15 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
+          asciidoctor \
           libvirglrenderer-dev \
           libepoxy-dev \
           libdrm-dev \
           libpipewire-0.3-dev \
           clang-format \
           libclang-dev
+        curl -OL https://github.com/containers/libkrun/archive/refs/tags/v1.17.0.tar.gz
+        tar xf v1.17.0.tar.gz
+        cd libkrun-1.17.0
+        make
+        sudo make PREFIX=/usr install

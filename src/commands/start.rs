@@ -68,10 +68,8 @@ impl StartCmd {
             Vec::new()
         };
 
-        let env_pairs: Vec<CString> = if self.envs.is_some() {
-            self.envs
-                .unwrap()
-                .into_iter()
+        let env_pairs: Vec<CString> = if let Some(envs) = self.envs {
+            envs.into_iter()
                 .map(|val| CString::new(val).unwrap())
                 .collect()
         } else {
