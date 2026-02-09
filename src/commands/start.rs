@@ -166,7 +166,7 @@ unsafe fn exec_vm(
     #[cfg(target_os = "macos")]
     let virtiofs_mounts = map_volumes(ctx, vmcfg, rootfs);
     #[cfg(target_os = "macos")]
-    let mount_wrapper = build_mount_wrapper(rootfs, cmd, &args, &virtiofs_mounts);
+    let mount_wrapper = build_mount_wrapper(rootfs, cmd, &vmcfg.workdir, &args, &virtiofs_mounts);
 
     let mut ports = Vec::new();
     for (host_port, guest_port) in vmcfg.mapped_ports.iter() {
@@ -273,6 +273,7 @@ unsafe fn exec_vm(
 fn build_mount_wrapper(
     rootfs: &str,
     cmd: Option<&str>,
+    workdir: &str,
     args: &[CString],
     mounts: &[(String, String)],
 ) -> Option<(CString, Vec<CString>)> {
@@ -280,7 +281,7 @@ fn build_mount_wrapper(
         return None;
     }
 
-    let helper_path = write_mount_script(rootfs, mounts);
+    let helper_path = write_mount_script(rootfs, workdir, mounts);
 
     let mut exec_args: Vec<CString> = Vec::new();
     let command = cmd.unwrap_or("/bin/sh");
@@ -292,7 +293,7 @@ fn build_mount_wrapper(
 }
 
 #[cfg(target_os = "macos")]
-fn write_mount_script(rootfs: &str, mounts: &[(String, String)]) -> String {
+fn write_mount_script(rootfs: &str, workdir: &str, mounts: &[(String, String)]) -> String {
     let host_path = format!("{}/.krunvm-mount.sh", rootfs);
     let guest_path = "/.krunvm-mount.sh".to_string();
 
@@ -305,6 +306,9 @@ fn write_mount_script(rootfs: &str, mounts: &[(String, String)]) -> String {
     writeln!(file, "set -e").unwrap();
     for (tag, guest_path) in mounts {
         writeln!(file, "mount -t virtiofs {} {}", tag, guest_path).unwrap();
+    }
+    if !workdir.is_empty() {
+        writeln!(file, "cd {}", workdir).unwrap();
     }
     writeln!(file, "exec \"$@\"").unwrap();
 
